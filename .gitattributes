@@ -1,0 +1,7 @@
+# Preserve source bytes identically on Linux and Windows.
+# The provenance contract hashes raw source bytes (no Git CRLF conversion).
+* -text
+*.pbf binary
+*.png binary
+*.rgba8 binary
+*.zip binary
