@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OL 10.10.0 vs OL VT GL Boost — same tiles and view</title>
+<script type="importmap">
+{"imports":{
+  "pbf":"/vendor/openlayers-10.10.0-runtime/node_modules/pbf/index.js",
+  "earcut":"/vendor/openlayers-10.10.0-runtime/node_modules/earcut/src/earcut.js",
+  "rbush":"/vendor/openlayers-10.10.0-runtime/node_modules/rbush/index.js",
+  "quickselect":"/vendor/openlayers-10.10.0-runtime/node_modules/quickselect/index.js"
+}}
+</script>
+<style>
+  :root{font-family:system-ui,sans-serif;color-scheme:dark;background:#111827;color:#e5e7eb}
+  body{margin:0;padding:24px}
+  h1{font-size:1.5rem;margin:0 0 12px}
+  p{color:#cbd5e1;line-height:1.5}
+  a{color:#93c5fd}
+  .maps{display:grid;grid-template-columns:repeat(2,512px);gap:16px;width:max-content}
+  .panel{background:#1f2937;border:1px solid #374151;padding:10px;border-radius:8px}
+  h2{font-size:1rem;margin:0 0 8px}
+  .viewport{width:512px;height:512px;position:relative;overflow:hidden;background:#0b1220}
+  .map{width:512px;height:512px}
+  #boost-canvas{width:512px;height:512px;position:absolute;inset:0;z-index:5;pointer-events:none}
+  /* Stock OL remains the fallback, but is not composited behind M5 in boost mode. */
+  .boost-active #boost-map .ol-layer{opacity:0}
+  #status{white-space:pre-wrap;background:#1f2937;padding:12px;border-radius:8px;max-width:1040px}
+  button{border:1px solid #64748b;background:#334155;color:white;padding:8px 12px;border-radius:6px;cursor:pointer}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .note{max-width:1040px;font-size:.9rem}
+  @media(max-width:1120px){.scroll{overflow-x:auto}}
+</style>
+</head>
+<body>
+<h1>OpenLayers 10.10.0 vs OL VT GL Boost</h1>
+<p class="note">Both panels use the same <strong>locally downloaded, distinct MVT tiles</strong>,
+styles, projection and <strong>shared View</strong>. Drag or wheel over either panel.
+The right panel uses the CPU-first WebGL1 scene with <strong>Worker OFF</strong>.
+This interactive demonstration is <strong>not a performance benchmark</strong>; two
+maps render simultaneously, which changes GPU and CPU load.</p>
+<div class="scroll"><div class="maps">
+  <section class="panel"><h2>Stock OpenLayers 10.10.0</h2><div class="viewport"><div class="map" id="stock-map"></div></div></section>
+  <section class="panel"><h2>OL VT GL Boost (CPU-first / Worker OFF)</h2>
+    <div class="viewport boost-active" id="boost-viewport">
+      <div class="map" id="boost-map"></div>
+      <canvas id="boost-canvas" width="512" height="512" aria-label="Boost WebGL rendering"></canvas>
+    </div>
+  </section>
+</div></div>
+<p><button id="fallback" type="button" disabled>Switch right panel to stock OL (test rollback)</button></p>
+<pre id="status" role="status">Loading local MVT fixtures…</pre>
+<p class="note">First run: <code>npm run test:rtx:prepare</code>, then <code>npm run example:compare</code>.
+Open <a href="http://127.0.0.1:4173/examples/compare/">http://127.0.0.1:4173/examples/compare/</a>.
+The source is intentionally opt-in and is not a published npm package.</p>
+<script type="module">
+import OLMap from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/Map.js';
+import View from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/View.js';
+import Projection from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/proj/Projection.js';
+import {addProjection} from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/proj.js';
+import TileGrid from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/tilegrid/TileGrid.js';
+import MVT from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/format/MVT.js';
+import VectorTileSource from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/source/VectorTile.js';
+import WebGLVectorTileLayer from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/layer/WebGLVectorTile.js';
+import {DirectM5SceneBinding, WebGL1Backend} from '../../src/index.js';
+
+const statusElement=document.getElementById('status');
+const fallbackButton=document.getElementById('fallback');
+const report={ready:false,sourceCount:0,stockFrames:0,boostFrames:0,sourceLoads:0,
+  workerDefaultOff:null,fallback:false,errors:[]};
+globalThis.__olvtExample=report;
+const publish=()=>{statusElement.textContent=JSON.stringify(report,null,2);};
+const fail=(error)=>{report.errors.push(String(error?.stack||error));publish();};
+addEventListener('error',event=>fail(event.error||event.message));
+addEventListener('unhandledrejection',event=>fail(event.reason));
+let binding=null;
+try{
+  // Fixture generation is intentionally a separate explicit command.
+  const response=await fetch('/tests/fixtures/r46-data/manifest.json');
+  if(!response.ok)throw Error('MVT fixtures missing. Run npm run test:rtx:prepare first.');
+  const manifest=await response.json();
+  if(manifest.sources?.length!==32||new Set(manifest.sources.map(s=>s.sha256)).size!==32)
+    throw Error('Expected manifest with 32 independent MVT SHA identities');
+  const selected=manifest.sources.slice(0,8);
+  const tileBuffers=new Map();
+  for(const part of selected){
+    const key=part.x+'/'+part.y;
+    const tile=await fetch('/tests/fixtures/r46-data/tiles/12/'+key+'.pbf');
+    if(!tile.ok)throw Error('MVT fixture unavailable: '+key);
+    tileBuffers.set(key,await tile.arrayBuffer());
+  }
+  report.sourceCount=selected.length;
+  const projection=new Projection({code:'OLVT:LOCAL',units:'m',extent:[0,0,32768,16384]});
+  addProjection(projection);
+  const tileGrid=new TileGrid({extent:[0,0,32768,16384],origin:[0,16384],resolutions:[64],tileSize:64});
+  const view=new View({projection,center:[16384,8192],resolution:64,constrainResolution:false});
+  const makeLayers=()=>{
+    const styles=new WeakMap();
+    const layers=selected.map((part,index)=>{
+      const format=new MVT({layers:[part.layer]});
+      const source=new VectorTileSource({
+        format,tileGrid,projection,wrapX:false,transition:0,
+        tileUrlFunction:([,x,y])=>x===index%8&&y===Math.floor(index/8)
+          ?part.x+'/'+part.y:undefined,
+        tileLoadFunction:(tile,url)=>tile.setLoader((extent,resolution,featureProjection)=>{
+          const bytes=tileBuffers.get(url);
+          if(!bytes){tile.setState(3);fail(Error('Tile missing: '+url));return;}
+          try{
+            tile.setFeatures(format.readFeatures(bytes.slice(0),{extent,featureProjection}));
+            report.sourceLoads++;
+          }catch(error){tile.setState(3);fail(error);}
+        })
+      });
+      const style=part.layer==='transportation'
+        ?{'stroke-color':'rgba(220,65,55,0.92)','stroke-width':3}
+        :{'fill-color':'rgba(210,194,169,0.52)','stroke-color':'#766655','stroke-width':1};
+      const layer=new WebGLVectorTileLayer({source,style,disableHitDetection:true});
+      styles.set(layer,style);
+      return layer;
+    });
+    return {layers,styles};
+  };
+  const original=makeLayers(),optimized=makeLayers();
+  const stockMap=new OLMap({target:document.getElementById('stock-map'),layers:original.layers,view,controls:[]});
+  // Use the R65-validated target=null -> scene.start() -> setTarget() sequence.
+  const boostMap=new OLMap({target:null,layers:optimized.layers,view,controls:[]});
+  const canvas=document.getElementById('boost-canvas');
+  const backend=new WebGL1Backend(canvas,{contextAntialias:false,gpuCompletionMode:'blocking',cacheBindings:true});
+  binding=new DirectM5SceneBinding({
+    map:boostMap,backend,canvas,
+    layerStyleResolver:layer=>optimized.styles.get(layer),
+    vectorTileOptions:{
+      drawMode:'style-pass',stableStyleIdentityCache:true,
+      olLayerFboComposition:true,closedLineJoins:true,
+      polygonInsideSegmentFastPath:true,polygonEarBBoxPrecheck:true
+    },
+    // Do NOT enable deferredWorker. A missing opt-in means Worker OFF.
+    onError:({error})=>fail(error)
+  });
+  binding.bridge.pipeline.tileScissorEnabled=true;
+  binding.start({renderSync:false});
+  boostMap.setTarget(document.getElementById('boost-map'));
+  report.workerDefaultOff=binding.deferredWorker===null;
+  if(!report.workerDefaultOff)throw Error('Worker default OFF invariant failed');
+  stockMap.on('postrender',()=>{report.stockFrames++;if(report.stockFrames%30===0)publish();});
+  boostMap.on('postrender',()=>{
+    report.boostFrames++;if(report.boostFrames%30===0)publish();
+  });
+  const fallback=()=>{
+    if(report.fallback)return;
+    binding.stop();
+    document.getElementById('boost-viewport').classList.remove('boost-active');
+    canvas.style.display='none';
+    report.fallback=true;
+    fallbackButton.disabled=true;
+    boostMap.renderSync();
+    publish();
+  };
+  globalThis.__olvtFallback=fallback;
+  fallbackButton.addEventListener('click',fallback);
+  report.ready=true;fallbackButton.disabled=false;publish();
+  stockMap.renderSync();boostMap.renderSync();
+}catch(error){
+  try{binding?.stop();}catch(stopError){fail(stopError);}
+  document.getElementById('boost-viewport').classList.remove('boost-active');
+  document.getElementById('boost-canvas').style.display='none';
+  fail(error);
+}
+</script>
+</body>
+</html>
