@@ -8,7 +8,9 @@
     "test:contract": "node tests/verify_cpu_first_release_contract.mjs",
     "test:rtx:prepare": "node tests/rtx/download_unique_tiles.mjs tests/fixtures/r46-data",
     "test:rtx": "node scripts/run-rtx-matrix.mjs",
-    "test:rtx:rollback": "node tests/rtx/run_real_ol_fallback.mjs . artifacts/rtx-rollback"
+    "test:rtx:rollback": "node tests/rtx/run_real_ol_fallback.mjs . artifacts/rtx-rollback",
+    "example:compare": "node examples/compare/serve.mjs",
+    "test:examples": "node tests/verify_example_contract.mjs"
   },
   "engines": {
     "node": ">=22 <24"
