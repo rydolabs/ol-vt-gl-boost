@@ -1,0 +1,82 @@
+name: R64 Build and Functional Regression
+on:
+  push:
+    branches: [refactor/r64-functional-layout]
+    paths:
+      - scripts/migrate_r64.py
+      - .github/workflows/r64-regression.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: olvt-r64-import
+  cancel-in-progress: false
+jobs:
+  rebuild-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch SHA-pinned public R62 source artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/nssang00/chatgpt-write-test/actions/artifacts/12589986191/zip > "$RUNNER_TEMP/r62-outer.zip"
+          python - "$RUNNER_TEMP/r62-outer.zip" "$RUNNER_TEMP/r62-inner.zip" <<'PY'
+          import zipfile,sys,hashlib
+          z=zipfile.ZipFile(sys.argv[1])
+          b=z.read('M5_R62_CPU_FIRST_BETA_SOURCE_CANDIDATE.zip')
+          expected='5ce32662ad837297e565c3e8df6cddea80c62cb8f14ecf12bc6348f788fcb846'
+          assert hashlib.sha256(b).hexdigest()==expected,'R62 source SHA pin mismatch'
+          open(sys.argv[2],'wb').write(b)
+          print('R62_SOURCE_VERIFIED_SHA256',expected)
+          PY
+      - name: Recreate and simplify stable renderer
+        run: python scripts/migrate_r64.py "$RUNNER_TEMP/r62-inner.zip"
+      - name: Node 17-core regression
+        run: npm test
+      - name: Default OFF, CPU fallback and source provenance
+        run: npm run test:contract
+      - name: Commit reviewed candidate to refactor branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '/node_modules/\n/artifacts/\n/RESULTS/\n/tests/fixtures/r46-data/\n' > .gitignore
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "refactor(r64): functional OL/tile/GL modules with 17 passing regressions"
+          git push origin HEAD:refactor/r64-functional-layout
+          git rev-parse HEAD
+      - name: Preserve candidate metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r64-ubuntu-migration
+          path: |
+            docs/REFACTOR_PROVENANCE.json
+            docs/SOURCE_PROVENANCE.json
+          retention-days: 30
+          if-no-files-found: warn
+  windows-regression:
+    needs: rebuild-and-test
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/r64-functional-layout
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Windows Core 17 regression
+        run: npm test
+      - name: Windows default OFF and provenance
+        run: npm run test:contract

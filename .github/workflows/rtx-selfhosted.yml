@@ -1,0 +1,41 @@
+name: Real RTX 5060 Ti E2E (manual)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  physical-gpu:
+    # Requires attaching the actual physical Windows RTX runner to THIS repository.
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require real NVIDIA RTX 5060 Ti
+        shell: powershell
+        run: |
+          $g=@(Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion)
+          if(-not ($g|Where-Object{$_.Name -match 'NVIDIA.*RTX 5060 Ti'})){throw 'Physical NVIDIA RTX 5060 Ti required'}
+          $g | ConvertTo-Json -Depth 4
+      - name: Node and strict source regression
+        run: |
+          npm test
+          npm run test:contract
+      - name: Install browser driver and obtain 32 distinct tiles
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.55.0
+          npm run test:rtx:prepare
+      - name: DPR1/2 raw RGBA8 and exact tile-ID 12-case oracle
+        run: npm run test:rtx
+      - name: Real stock OpenLayers recovery after injected app fault
+        run: npm run test:rtx:rollback
+      - name: Retain raw GPU and rollback proof even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: olvt-rtx-physical-evidence
+          path: artifacts/**
+          retention-days: 30
+          if-no-files-found: warn

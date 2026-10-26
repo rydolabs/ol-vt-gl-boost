@@ -1,0 +1,380 @@
+{
+  "schema": "r64-functional-layout",
+  "sourceSha256": "5ce32662ad837297e565c3e8df6cddea80c62cb8f14ecf12bc6348f788fcb846",
+  "workerDefault": "off",
+  "newSourceModuleCount": 57,
+  "fileMapping": [
+    {
+      "original": "src/renderer/OpenLayersRendererBinding.js",
+      "new": "src/compat/OpenLayersRendererBinding.js",
+      "oldSha256": "c45e68c7c990975d5c7af0b0577477a25b5ff467466e1c1019eb3edae13ee9dd",
+      "newSha256": "a0e31f4378170d7bb1c2dc7c2ea1aa86e5b2e518722cb42f785a01c45e4d19bc"
+    },
+    {
+      "original": "src/renderer/VectorRenderer.js",
+      "new": "src/compat/VectorRenderer.js",
+      "oldSha256": "dd1f0760b1c42f553564cfb30afc78c3c676042019afc14eb97167cc87e946ee",
+      "newSha256": "6e02cf42beaed2148bb3bed43deea3b2ebcbe77b01fc0e65b9494baa4c46f3a3"
+    },
+    {
+      "original": "src/renderer/adapters/maptiler/MapTilerStyleAdapter.js",
+      "new": "src/compat/MapTilerStyleAdapter.js",
+      "oldSha256": "2c6550e09e4d63b82599299c193df32f148229b3b9615a7413e70d2e838cba24",
+      "newSha256": "2c6550e09e4d63b82599299c193df32f148229b3b9615a7413e70d2e838cba24"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlCanvasHost.js",
+      "new": "src/ol/host.js",
+      "oldSha256": "89f7e83edd3455c66cdc4e9c70f2ec7825a9acb6dbf00dc07535833316470e70",
+      "newSha256": "ffff37e1b28ec0cc4b4b7d7c17993df0aa853a46e2bc5ce00abd51b791170793"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlFeatureAdapter.js",
+      "new": "src/ol/OlFeatureAdapter.js",
+      "oldSha256": "edfd88eb18da7a7b24307cca035b0d04f3ab4b94abadf81606a77afb50e53fef",
+      "newSha256": "edfd88eb18da7a7b24307cca035b0d04f3ab4b94abadf81606a77afb50e53fef"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlFrameAdapter.js",
+      "new": "src/ol/frame.js",
+      "oldSha256": "31317967cffd26c5cb6b6f61c275d0e2c1043c5164747f75d439cb26323b8f2c",
+      "newSha256": "b363f422c945f1af3566b758582debad13788c4ceca9372d83982f5d691ceeaa"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlGeometryAdapter.js",
+      "new": "src/ol/OlGeometryAdapter.js",
+      "oldSha256": "354aa9b2eeb516a2db0b394c8cf573d6182a90330f092e43731627839543f497",
+      "newSha256": "354aa9b2eeb516a2db0b394c8cf573d6182a90330f092e43731627839543f497"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlLayerAdapter.js",
+      "new": "src/ol/layer-state.js",
+      "oldSha256": "f81e8415826abb9ec5c14f66657c48084c46d779f4c2213a9669e6ca02734a5e",
+      "newSha256": "686ddea5d60610c5b6a0e0c9afc1b258868b893d154cb3af20ff29aa1c935b37"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlLayerLifecycleAdapter.js",
+      "new": "src/ol/layer-state.js",
+      "oldSha256": "efa523ebfc00cadccbdf599acc7dbe543c8ca65133018de26d7229d70ca537af",
+      "newSha256": "686ddea5d60610c5b6a0e0c9afc1b258868b893d154cb3af20ff29aa1c935b37"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlLayerTreeAdapter.js",
+      "new": "src/ol/OlLayerTreeAdapter.js",
+      "oldSha256": "2cf6b0f59ff8831f31c8f4cbe83a5a563d074e1cde6c59c046010413d50b71b9",
+      "newSha256": "2cf6b0f59ff8831f31c8f4cbe83a5a563d074e1cde6c59c046010413d50b71b9"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlMapFrameBridge.js",
+      "new": "src/ol/frame.js",
+      "oldSha256": "cd21e0b97219b13de9160b85fed9662fba97e8b16f1f3d3eeffe1bf7f948a617",
+      "newSha256": "b363f422c945f1af3566b758582debad13788c4ceca9372d83982f5d691ceeaa"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlMapSceneAdapter.js",
+      "new": "src/ol/OlMapSceneAdapter.js",
+      "oldSha256": "840e0468dd0b66ae9367266189a9af32a70b8460210a711e1abfef7b7477d629",
+      "newSha256": "840e0468dd0b66ae9367266189a9af32a70b8460210a711e1abfef7b7477d629"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlSourceLifecycleAdapter.js",
+      "new": "src/ol/OlSourceLifecycleAdapter.js",
+      "oldSha256": "b16b30349e4ea9f4a47571df98ea5d3cab102966692706e41b064dac1f93ca74",
+      "newSha256": "b16b30349e4ea9f4a47571df98ea5d3cab102966692706e41b064dac1f93ca74"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlStyleAdapter.js",
+      "new": "src/ol/OlStyleAdapter.js",
+      "oldSha256": "983fb6409ec2b52ecdbe71833bc2d5a65eeb0f72d4c387eb71dccb0a36c2d686",
+      "newSha256": "983fb6409ec2b52ecdbe71833bc2d5a65eeb0f72d4c387eb71dccb0a36c2d686"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlTargetLifecycleAdapter.js",
+      "new": "src/ol/host.js",
+      "oldSha256": "1710452825552aaea3baab60ba999d5611d25d1b45659d35891f726d211da0e2",
+      "newSha256": "ffff37e1b28ec0cc4b4b7d7c17993df0aa853a46e2bc5ce00abd51b791170793"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlVectorTileFeatureAdapter.js",
+      "new": "src/ol/OlVectorTileFeatureAdapter.js",
+      "oldSha256": "a2ac87e6b18da250e2ed5d9531ae0adfa921574a8745ee30a3442a33302b9127",
+      "newSha256": "73b5e89c7fb3dcc024201a5904731c6f2c54c959a091886597bc230723c84dc1"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlVectorTileFramePruner.js",
+      "new": "src/ol/OlVectorTileFramePruner.js",
+      "oldSha256": "0f338a15b55e70da96153dec3cd863787dcd235e0f525111a4641a0c8647b7e9",
+      "newSha256": "0f338a15b55e70da96153dec3cd863787dcd235e0f525111a4641a0c8647b7e9"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OlVectorTileSourceAdapter.js",
+      "new": "src/ol/OlVectorTileSourceAdapter.js",
+      "oldSha256": "069e667d759739b050e3f30a31cc8d0628395852a27ac7ce8bc3e5a2c2313977",
+      "newSha256": "069e667d759739b050e3f30a31cc8d0628395852a27ac7ce8bc3e5a2c2313977"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/OpenLayersAdapter.js",
+      "new": "src/ol/OpenLayersAdapter.js",
+      "oldSha256": "050e010d576006dc945e1c5ae980edcd3f68e751144c78a02a5fda101aafceda",
+      "newSha256": "1e69b86118b40d990acc640db73481fde3a11564a44660315a480528d4e6e3aa"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/PolygonRingGrouping.js",
+      "new": "src/ol/PolygonRingGrouping.js",
+      "oldSha256": "f46081f3759dbae84b535023aec946bbf428eceeb33cb9a11f2af5afc4862a1a",
+      "newSha256": "f46081f3759dbae84b535023aec946bbf428eceeb33cb9a11f2af5afc4862a1a"
+    },
+    {
+      "original": "src/renderer/adapters/openlayers/README.md",
+      "new": "src/ol/README.md",
+      "oldSha256": "05bf0a05a41546c5f12965b9f46afaa5dca6f0c0dd8debcfbbfcc145625f51ff",
+      "newSha256": "05bf0a05a41546c5f12965b9f46afaa5dca6f0c0dd8debcfbbfcc145625f51ff"
+    },
+    {
+      "original": "src/renderer/backend/WebGL1Backend.js",
+      "new": "src/gl/backend.js",
+      "oldSha256": "fdf3500082d74b1951937d4d90be33ef2d97c9a1ced691313fbb9f0727c0268a",
+      "newSha256": "fdf3500082d74b1951937d4d90be33ef2d97c9a1ced691313fbb9f0727c0268a"
+    },
+    {
+      "original": "src/renderer/core/DirtyTracker.js",
+      "new": "src/compat/core/DirtyTracker.js",
+      "oldSha256": "039fb07ffd316088c3cc5e70a20e36dede9c67431f5b7b6b6b024b31f905931f",
+      "newSha256": "039fb07ffd316088c3cc5e70a20e36dede9c67431f5b7b6b6b024b31f905931f"
+    },
+    {
+      "original": "src/renderer/core/GeometryAllocator.js",
+      "new": "src/gl/GeometryAllocator.js",
+      "oldSha256": "8036740cc720146f5906a17b37461bb8ce20c3ff4e999887c56ee9e9c88641e5",
+      "newSha256": "8036740cc720146f5906a17b37461bb8ce20c3ff4e999887c56ee9e9c88641e5"
+    },
+    {
+      "original": "src/renderer/core/GeometryStore.js",
+      "new": "src/compat/core/GeometryStore.js",
+      "oldSha256": "0fb7d25d54b425c60aeba061bac044789ec73dd2b3bbcfbb0c407d4b08701511",
+      "newSha256": "0fb7d25d54b425c60aeba061bac044789ec73dd2b3bbcfbb0c407d4b08701511"
+    },
+    {
+      "original": "src/renderer/core/GpuBudgetController.js",
+      "new": "src/gl/GpuBudgetController.js",
+      "oldSha256": "96ecce45a054628bb9508f42596e8144b81df7da7b403ec0b2324b510e66a81a",
+      "newSha256": "96ecce45a054628bb9508f42596e8144b81df7da7b403ec0b2324b510e66a81a"
+    },
+    {
+      "original": "src/renderer/core/MaintenanceScheduler.js",
+      "new": "src/gl/MaintenanceScheduler.js",
+      "oldSha256": "29c87424ae3e446088a20ccd708e8fe291c8eb7d5e75f0892607fb708c77ccc3",
+      "newSha256": "29c87424ae3e446088a20ccd708e8fe291c8eb7d5e75f0892607fb708c77ccc3"
+    },
+    {
+      "original": "src/renderer/core/PackedPathOrder.js",
+      "new": "src/compat/core/PackedPathOrder.js",
+      "oldSha256": "9fcadf732ea2148cdd56d59a146a368c8fa77bea6e26e049454baa9cf057cf40",
+      "newSha256": "9fcadf732ea2148cdd56d59a146a368c8fa77bea6e26e049454baa9cf057cf40"
+    },
+    {
+      "original": "src/renderer/core/ReferenceIndexStream.js",
+      "new": "src/gl/ReferenceIndexStream.js",
+      "oldSha256": "fb5b6f8dda84771945fc0d3b9fb045601737e5250d96106c075dff1ecfd2dac1",
+      "newSha256": "fb5b6f8dda84771945fc0d3b9fb045601737e5250d96106c075dff1ecfd2dac1"
+    },
+    {
+      "original": "src/renderer/core/RenderCompiler.js",
+      "new": "src/compat/core/RenderCompiler.js",
+      "oldSha256": "b5f971859edbc09bb76096f1d534092e227cd8c8046ac8a82580c4a46f07fa68",
+      "newSha256": "b5f971859edbc09bb76096f1d534092e227cd8c8046ac8a82580c4a46f07fa68"
+    },
+    {
+      "original": "src/renderer/core/RenderReferenceStore.js",
+      "new": "src/compat/core/RenderReferenceStore.js",
+      "oldSha256": "27cb5f640a1f52ec85ddacb04ca5e41670b2ca001be9696282b5dd3758175357",
+      "newSha256": "27cb5f640a1f52ec85ddacb04ca5e41670b2ca001be9696282b5dd3758175357"
+    },
+    {
+      "original": "src/renderer/core/RenderSchedule.js",
+      "new": "src/compat/core/RenderSchedule.js",
+      "oldSha256": "24857daca18ca1633618422911567d43d9b71776995c0be7094dda92609b3486",
+      "newSha256": "24857daca18ca1633618422911567d43d9b71776995c0be7094dda92609b3486"
+    },
+    {
+      "original": "src/renderer/core/RendererKernel.js",
+      "new": "src/compat/core/RendererKernel.js",
+      "oldSha256": "16df11958d05b7fba126f5fdc4ff5852fc92a0163daba7314a68d5730549f563",
+      "newSha256": "16df11958d05b7fba126f5fdc4ff5852fc92a0163daba7314a68d5730549f563"
+    },
+    {
+      "original": "src/renderer/core/ResourceManager.js",
+      "new": "src/gl/ResourceManager.js",
+      "oldSha256": "6a8bdea45f072c6bcd1e63d48cf0346a435c776d9c396dcab4ae7e0beca68ceb",
+      "newSha256": "6a8bdea45f072c6bcd1e63d48cf0346a435c776d9c396dcab4ae7e0beca68ceb"
+    },
+    {
+      "original": "src/renderer/core/StyleStore.js",
+      "new": "src/compat/core/StyleStore.js",
+      "oldSha256": "0d62b5e5e81011aa743062e9a45a3d072f528d8d90191ec57bb73a32a574b90c",
+      "newSha256": "0d62b5e5e81011aa743062e9a45a3d072f528d8d90191ec57bb73a32a574b90c"
+    },
+    {
+      "original": "src/renderer/core/TextureCache.js",
+      "new": "src/gl/TextureCache.js",
+      "oldSha256": "b5c495cc2a432b0a386276a4cfb918e31f0c559da387fa2db5efc2de88f60462",
+      "newSha256": "b5c495cc2a432b0a386276a4cfb918e31f0c559da387fa2db5efc2de88f60462"
+    },
+    {
+      "original": "src/renderer/core/TileResourceStore.js",
+      "new": "src/gl/TileResourceStore.js",
+      "oldSha256": "acabd2608333f22ca84643867c0ea8798adc255047178bda8bba535d5654f2eb",
+      "newSha256": "acabd2608333f22ca84643867c0ea8798adc255047178bda8bba535d5654f2eb"
+    },
+    {
+      "original": "src/renderer/integration/DirectFeatureFlatTriangulation.js",
+      "new": "src/tile/DirectFeatureFlatTriangulation.js",
+      "oldSha256": "4602b8cf024fe77d2445eddfd40056cff1c0d84e1d5cf281543825a805052a18",
+      "newSha256": "4602b8cf024fe77d2445eddfd40056cff1c0d84e1d5cf281543825a805052a18"
+    },
+    {
+      "original": "src/renderer/integration/DirectFeaturePolygonBuffers.js",
+      "new": "src/tile/DirectFeaturePolygonBuffers.js",
+      "oldSha256": "00598bfcc90b9d807e4db82b3d66d751d9d5439738f65570045d1c34f8b67883",
+      "newSha256": "cb258084afcb386857be56e120a07d80a45df0306d17f4060a4e0274f6e1d585"
+    },
+    {
+      "original": "src/renderer/integration/DirectFeatureWebGLPipeline.js",
+      "new": "src/gl/pipeline.js",
+      "oldSha256": "be11b86268fa6f07722bbeff7698e8341bc21d1678a7102faf3be1abd94da931",
+      "newSha256": "77b2a076a7d8e58018c7c6d5b7c2c7300580b184f8aae712063a7d180be3981a"
+    },
+    {
+      "original": "src/renderer/integration/DirectM5SceneBinding.js",
+      "new": "src/ol/scene.js",
+      "oldSha256": "db6c3ff612a2cf67b1ef734d9c6d0e3296843fd41b785079f55836c0bca8d024",
+      "newSha256": "4c507f4c76fcd318e2489a993fabe32a751e3ae8cf919c3c3f71f061077a52ec"
+    },
+    {
+      "original": "src/renderer/integration/EarcutPolygonTriangulator.js",
+      "new": "src/tile/EarcutPolygonTriangulator.js",
+      "oldSha256": "ccbe939e4dbd835ab0bd8f6209fc471d578b27da7722c562722bfe1a30cc4083",
+      "newSha256": "ccbe939e4dbd835ab0bd8f6209fc471d578b27da7722c562722bfe1a30cc4083"
+    },
+    {
+      "original": "src/renderer/integration/NeutralGeometryCompiler.js",
+      "new": "src/tile/NeutralGeometryCompiler.js",
+      "oldSha256": "d5cd85f1d87dc8fbeb39042dafc0a5e02b6179ddc4ae8454feb22a61b3554207",
+      "newSha256": "6657acc0a77d1b3ecb21b2846217d289ff145a329d468bb7a452567a426f9fa6"
+    },
+    {
+      "original": "src/renderer/integration/OLDisableWorkerM4Bridge.js",
+      "new": "src/ol/bridge.js",
+      "oldSha256": "97b8c45610c438c8694bb68152bab864cebbd7adfc2ea3950aef6e3e67a69be4",
+      "newSha256": "012e869d87de2974657a85c013bc5d235f92d5d17e1cff82e8146e351f7acb02"
+    },
+    {
+      "original": "src/renderer/integration/PolygonClipPrecheck.js",
+      "new": "src/tile/clip.js",
+      "oldSha256": "916be4fdd1e201613f58a80e4e737bcea022e265e19e695a23ecb464ce0f2494",
+      "newSha256": "d8418f6f0f57d59d811fda6dc9d314c70006716ac8763b7804e2119091bcad37"
+    },
+    {
+      "original": "src/renderer/integration/RenderFeatureLinePacker.js",
+      "new": "src/tile/RenderFeatureLinePacker.js",
+      "oldSha256": "0d8682224ed66dc74624fd0e01e0953d1c896c582fa41d25215b98de256a2ec3",
+      "newSha256": "0d8682224ed66dc74624fd0e01e0953d1c896c582fa41d25215b98de256a2ec3"
+    },
+    {
+      "original": "src/renderer/integration/RendererFeatureSink.js",
+      "new": "src/compat/RendererFeatureSink.js",
+      "oldSha256": "161aaa3c0acb2aee1da938f2a031bd4f0a85c6e84494303a26c9fc7bc928c573",
+      "newSha256": "ef4df68ae554fb5baf3bf3a81c17ef0d62d2cbe77e79d685abfd50e870e07edd"
+    },
+    {
+      "original": "src/renderer/integration/RendererLayerBindingPort.js",
+      "new": "src/compat/RendererLayerBindingPort.js",
+      "oldSha256": "a5653411d1fefd7c784e6231f4584a89810881fe264b1f44611dea861b65f93b",
+      "newSha256": "705314c13cff4b483c5aadabbeb84e3fdc1ee468debfd4d6a5b8db1dca58a911"
+    },
+    {
+      "original": "src/renderer/integration/RendererSceneCoordinator.js",
+      "new": "src/compat/RendererSceneCoordinator.js",
+      "oldSha256": "0a0b838e6de4df0463a1a9492274b49173cd465f956a4015be41b663ca8d12ac",
+      "newSha256": "0a0b838e6de4df0463a1a9492274b49173cd465f956a4015be41b663ca8d12ac"
+    },
+    {
+      "original": "src/renderer/integration/RendererVectorTileSink.js",
+      "new": "src/compat/RendererVectorTileSink.js",
+      "oldSha256": "7be76a64902bdc591d083184d6830a058309f54443bf97ea620aac9a8d476d3f",
+      "newSha256": "7be76a64902bdc591d083184d6830a058309f54443bf97ea620aac9a8d476d3f"
+    },
+    {
+      "original": "src/renderer/integration/TileGeometryClipper.js",
+      "new": "src/tile/clip.js",
+      "oldSha256": "afbe5946d23c0b6ec9f388315bd3a4236a43436fb5bd0449f5f2407d574afd19",
+      "newSha256": "d8418f6f0f57d59d811fda6dc9d314c70006716ac8763b7804e2119091bcad37"
+    },
+    {
+      "original": "src/renderer/integration/workers/DeferredDirectTileHandover.js",
+      "new": "src/optional/worker/DeferredDirectTileHandover.js",
+      "oldSha256": "fb194e69d52bd53ba0ca20e1e6ef67a4040f47a550e3227ce3bc5f7cc992f5f6",
+      "newSha256": "fb194e69d52bd53ba0ca20e1e6ef67a4040f47a550e3227ce3bc5f7cc992f5f6"
+    },
+    {
+      "original": "src/renderer/integration/workers/DirectTileEncodeTask.js",
+      "new": "src/optional/worker/DirectTileEncodeTask.js",
+      "oldSha256": "8d027dcab7f50a9c41c5c5039c1c158781b6541fd0521af228ea96b1292d9986",
+      "newSha256": "ba4b0db213396e9d33aaf19deae6cd045b0e2061437ba2c9ffdc22c210306017"
+    },
+    {
+      "original": "src/renderer/integration/workers/DirectTileEncodeWorker.browser.js",
+      "new": "src/optional/worker/DirectTileEncodeWorker.browser.js",
+      "oldSha256": "62feace8842ea336b9a786247ce394996bb4df9152c585eefd4a8445391f3906",
+      "newSha256": "62feace8842ea336b9a786247ce394996bb4df9152c585eefd4a8445391f3906"
+    },
+    {
+      "original": "src/renderer/integration/workers/DirectTileEncodeWorker.node.mjs",
+      "new": "src/optional/worker/DirectTileEncodeWorker.node.mjs",
+      "oldSha256": "53025a1751b95f05001af77223304b17b743df5e178cf1a54103e157a8ec1192",
+      "newSha256": "53025a1751b95f05001af77223304b17b743df5e178cf1a54103e157a8ec1192"
+    },
+    {
+      "original": "src/renderer/integration/workers/DirectTileWorkerPool.js",
+      "new": "src/optional/worker/DirectTileWorkerPool.js",
+      "oldSha256": "60b4f415f10579e4fc16b9c00c0c8e2f94bb4444775bfc683832a4038fc5fd01",
+      "newSha256": "60b4f415f10579e4fc16b9c00c0c8e2f94bb4444775bfc683832a4038fc5fd01"
+    },
+    {
+      "original": "src/renderer/integration/workers/EncodedTileExactGate.js",
+      "new": "src/optional/worker/EncodedTileExactGate.js",
+      "oldSha256": "77f0cbbb4e9263dc47319ae415491d1a1a96accd2e4ca1c9f28c79de51de56ac",
+      "newSha256": "77f0cbbb4e9263dc47319ae415491d1a1a96accd2e4ca1c9f28c79de51de56ac"
+    },
+    {
+      "original": "src/renderer/renderers/LineRenderer.js",
+      "new": "src/gl/LineRenderer.js",
+      "oldSha256": "4120f4f6d25355a9cb06b32ae3bb9b743aed7366bc3ebaf728d295d0208ea305",
+      "newSha256": "60d4ae25cfa8794b95f66fb1c72ab764ecdcbd024135789d53b66817a07b0458"
+    },
+    {
+      "original": "src/renderer/renderers/PointRenderer.js",
+      "new": "src/compat/renderers.js",
+      "oldSha256": "cf0d426a271c49c660c7cd744e3866e00f3ce2475e077290b66ad7c85ab96d60",
+      "newSha256": "738e8fd0990f4ad9c6f35f1509d95e9be2d0f5d386d6a42979f7457d5c8d41c5"
+    },
+    {
+      "original": "src/renderer/renderers/PolygonRenderer.js",
+      "new": "src/compat/renderers.js",
+      "oldSha256": "fdda3c99c4cb1b83dbf8a52d9debc14ae16a7380e09dac216c7740a360b4866b",
+      "newSha256": "738e8fd0990f4ad9c6f35f1509d95e9be2d0f5d386d6a42979f7457d5c8d41c5"
+    },
+    {
+      "original": "src/renderer/renderers/SimpleRenderer.js",
+      "new": "src/compat/renderers.js",
+      "oldSha256": "8ffe267319a163c20aed856824ed2b7c879799bf59ac08ef76ea2400afc5719f",
+      "newSha256": "738e8fd0990f4ad9c6f35f1509d95e9be2d0f5d386d6a42979f7457d5c8d41c5"
+    },
+    {
+      "original": "src/renderer/shaders/lineShaders.js",
+      "new": "src/gl/shaders.js",
+      "oldSha256": "0c9826065a7848836fcbbd8d7e145b26e472bab5b2e9ad89ed33657b7d17661b",
+      "newSha256": "0c9826065a7848836fcbbd8d7e145b26e472bab5b2e9ad89ed33657b7d17661b"
+    }
+  ]
+}

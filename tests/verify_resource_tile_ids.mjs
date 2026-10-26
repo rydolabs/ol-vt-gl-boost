@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {ResourceManager} from '../src/gl/ResourceManager.js';
+const rm=new ResourceManager();
+const store=new Map([['a',{type:'line',coords:[[0,0],[1,1]]}],['b',{type:'line',coords:[[2,2],[3,3]]}]]);
+rm.syncReferences([{geometryId:'a',tileKey:'12/0/0'},{geometryId:'b',tileKey:'12/0/1'}],store);
+assert.deepEqual([...rm.tiles.keys()].sort(),['12/0/0','12/0/1']);
+assert.equal(rm.resources.get('a').refCount,1);assert.equal(rm.resources.get('b').refCount,1);
+rm.syncReferences([{geometryId:'b',tileKey:'12/0/1'}],store);
+assert.deepEqual([...rm.tiles.keys()],['12/0/1']);
+assert.equal(rm.resources.get('a').refCount,0);assert.equal(rm.resources.get('b').refCount,1);
+rm.syncReferences([{geometryId:'a',tileId:'explicit-tile'}],store);
+assert.deepEqual([...rm.tiles.keys()],['explicit-tile']);
+rm.syncReferences([{geometryId:'a'}],store);
+assert.deepEqual([...rm.tiles.keys()],['__global__']);
+assert.equal(rm.refcountErrors,0);
+console.log('PASS tileKey fallback / explicit tileId / release / global fallback; no refcount errors');
