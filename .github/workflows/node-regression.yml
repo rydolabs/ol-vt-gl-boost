@@ -1,0 +1,26 @@
+name: Core Regression (Ubuntu and Windows)
+on:
+  push:
+    branches: [main, refactor/r64-functional-layout]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  regression:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify 17 core CPU/Worker regressions
+        run: npm test
+      - name: Verify default OFF, R48 fallback, and original/new source bytes
+        run: npm run test:contract
