@@ -24,3 +24,6 @@ jobs:
         run: npm test
       - name: Verify default OFF, R48 fallback, and original/new source bytes
         run: npm run test:contract
+
+      - name: Validate side-by-side OL 10.10.0 and Boost example
+        run: npm run test:examples
