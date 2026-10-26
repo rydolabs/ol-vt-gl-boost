@@ -4,6 +4,71 @@
 
 The repository keeps OpenLayers Map / View / VectorTileSource integration while providing a direct geometry-to-GPU pipeline, a strict CPU line-join fallback for pixel correctness, and an optional deferred Worker (default **OFF**). **Experimental: not production-approved.**
 
+## Usage example — stock OpenLayers vs OL VT GL Boost
+
+A **runnable side-by-side example** is included: [examples/compare/index.html](examples/compare/index.html). It uses OpenLayers **10.10.0** on the left and the **same OpenLayers Map / View / VectorTileSource APIs** with the direct WebGL1 rendering pipeline on the right.
+
+### Run locally (Node.js 22, fixture download requires network)
+
+```bash
+git clone https://github.com/rydolabs/ol-vt-gl-boost.git
+cd ol-vt-gl-boost
+npm run test:rtx:prepare   # download/check 32 fixed distinct PBF fixtures
+npm run example:compare    # localhost-only, port 4173
+```
+
+Open **http://127.0.0.1:4173/examples/compare/**. Drag or zoom either map; both use **one shared View instance**, the same local PBF data and equivalent vector styles. The right-hand panel has a **Switch to stock OL** button to demonstrate explicit rollback after stopping the optimized scene.
+
+<details>
+<summary><strong>See the two initialization paths (excerpt from the runnable example)</strong></summary>
+
+**Original OpenLayers 10.10.0** — native WebGL vector-tile layer:
+
+```js
+const view = new View({projection, center: [16384, 8192], resolution: 64});
+const {layers: stockLayers} = makeLayers(); // OL VectorTileSource + WebGLVectorTileLayer
+const stockMap = new OLMap({
+  target: document.getElementById('stock-map'),
+  layers: stockLayers,
+  view,
+  controls: []
+});
+```
+
+**OL VT GL Boost** — the same OL layer/source/view objects, plus a direct WebGL scene:
+
+```js
+import {DirectM5SceneBinding, WebGL1Backend} from '../../src/index.js';
+
+const {layers: boostLayers, styles} = makeLayers();
+const boostMap = new OLMap({target: null, layers: boostLayers, view, controls: []});
+const canvas = document.getElementById('boost-canvas'); // 512×512 overlay, pointer-events:none
+const backend = new WebGL1Backend(canvas, {contextAntialias: false});
+const binding = new DirectM5SceneBinding({
+  map: boostMap, backend, canvas,
+  layerStyleResolver: layer => styles.get(layer),
+  vectorTileOptions: {
+    drawMode: 'style-pass', stableStyleIdentityCache: true,
+    olLayerFboComposition: true, closedLineJoins: true,
+    polygonInsideSegmentFastPath: true, polygonEarBBoxPrecheck: true
+  }
+  // deferredWorker is not enabled: Worker OFF is the stable default.
+});
+binding.start({renderSync: false});
+boostMap.setTarget(document.getElementById('boost-map'));
+
+// Application-initiated rollback to stock OL after stopping optimized drawing:
+binding.stop();
+canvas.style.display = 'none';
+// Re-enable the underlying stock OL layer canvas via the host's CSS.
+```
+
+The excerpt relies on shared `makeLayers()` / projection / styling setup; see the [complete HTML](examples/compare/index.html) for a working definition and fallback button. The repository is currently **private as an npm package** (`"private": true`); these imports use checked-in source paths, not a published package.
+
+</details>
+
+**Demo caveat:** both maps are rendered simultaneously, and the optimized panel retains a visually hidden stock OL renderer for fallback. This is for **feature/API inspection, not a fair performance test or a claim of production fault recovery**. The controlled historical benchmark below uses a separate one-arm-at-a-time ABBA protocol, and the current Worker-OFF `main` branch still requires a fresh matched performance benchmark.
+
 ## Performance vs stock OpenLayers 10.10.0
 
 The following is an **historical R48 controlled RTX benchmark (2026-10-24)**, not a newly measured result for the merged R64 `main` branch.
