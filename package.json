@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "test": "node scripts/run-unit-tests.mjs",
-    "test:contract": "node tests/verify_cpu_first_release_contract.mjs"
+    "test:contract": "node tests/verify_cpu_first_release_contract.mjs",
+    "test:rtx:prepare": "node tests/rtx/download_unique_tiles.mjs tests/fixtures/r46-data",
+    "test:rtx": "node scripts/run-rtx-matrix.mjs",
+    "test:rtx:rollback": "node tests/rtx/run_real_ol_fallback.mjs . artifacts/rtx-rollback"
   },
   "engines": {
     "node": ">=22 <24"
