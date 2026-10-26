@@ -1,0 +1,116 @@
+<!doctype html><html><head><meta charset="utf-8"><title>R63 CPU-first fail-closed OL map rollback UI</title>
+<script type="importmap">{"imports":{"pbf":"/vendor/openlayers-10.10.0-runtime/node_modules/pbf/index.js","earcut":"/vendor/openlayers-10.10.0-runtime/node_modules/earcut/src/earcut.js","rbush":"/vendor/openlayers-10.10.0-runtime/node_modules/rbush/index.js","quickselect":"/vendor/openlayers-10.10.0-runtime/node_modules/quickselect/index.js"}}</script>
+<style>body{margin:0;background:#222;color:#ddd;font:14px monospace}#olmap{position:absolute;top:0;left:540px;width:512px;height:512px}#m5{position:absolute;top:0;left:0;width:512px;height:512px}#log{position:absolute;top:540px}</style></head>
+<body><canvas id="m5" width="512" height="512"></canvas><div id="olmap"></div><pre id="log">loading...</pre>
+<script type="module">
+import OLMap from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/Map.js';
+import View from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/View.js';
+import Projection from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/proj/Projection.js';
+import {addProjection} from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/proj.js';
+import TileGrid from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/tilegrid/TileGrid.js';
+import MVT from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/format/MVT.js';
+import VectorTileSource from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/source/VectorTile.js';
+import WebGLVectorTileLayer from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/layer/WebGLVectorTile.js';
+import {WebGL1Backend} from '../../src/gl/backend.js';
+import {OpenLayersRendererBinding} from '../../src/compat/OpenLayersRendererBinding.js';
+const info={ready:false,errors:[],frames:0,sourceLoads:0,sourceErrors:0};globalThis.__r53=info;
+const recovery={mode:'m5',rollbackCount:0,reason:null,bindingStopped:false,
+ workerDefaultOff:null,olFrameAtFallback:null,lastViewBefore:null,lastViewAfter:null};
+globalThis.__r63=recovery;
+const output=t=>document.getElementById('log').textContent=t;
+addEventListener('error',e=>{info.errors.push(String(e.message||e.error));output(info.errors.at(-1))});
+addEventListener('unhandledrejection',e=>{info.errors.push(String(e.reason));output(info.errors.at(-1))});
+try{
+ globalThis.__m5R18ClosedRingJoin=true;globalThis.__m5R18FlatUnclippedStroke=true;
+ globalThis.__m5R18PolygonStrokeUnclipped=true;globalThis.__m5R29EarcutPartial=true;
+ const manifestResp=await fetch('/tests/fixtures/r46-data/manifest.json');
+ if(!manifestResp.ok)throw Error('32 PBF manifest unavailable '+manifestResp.status);
+ const manifest=await manifestResp.json();
+ if(manifest.sources?.length!==32||new Set(manifest.sources.map(x=>x.sha256)).size!==32)
+  throw Error('32 source SHA identities invalid');
+ const pbf=new Map();
+ for(const part of manifest.sources){
+  const r=await fetch('/tests/fixtures/r46-data/tiles/12/'+part.x+'/'+part.y+'.pbf');
+  if(!r.ok)throw Error('R53 PBF '+part.x+'/'+part.y+' HTTP '+r.status);
+  pbf.set(part.x+'/'+part.y,await r.arrayBuffer());
+ }
+ const proj=new Projection({code:'M5:LOCAL',units:'m',extent:[0,0,32768,16384]});addProjection(proj);
+ const grid=new TileGrid({extent:[0,0,32768,16384],origin:[0,16384],resolutions:[64],tileSize:64});
+ const styles=new WeakMap();
+ const layers=manifest.sources.map((part,i)=>{
+  const format=new MVT({layers:[part.layer]});
+  const source=new VectorTileSource({format,tileGrid:grid,projection:proj,wrapX:false,transition:0,
+   tileUrlFunction:([,x,y])=>x===i%8&&y===Math.floor(i/8)?part.x+'/'+part.y:undefined,
+   tileLoadFunction:(tile,url)=>tile.setLoader((extent,resolution,projection)=>{
+    const raw=pbf.get(url);
+    if(!raw){tile.setState(3);info.sourceErrors++;return;}
+    try{tile.setFeatures(format.readFeatures(raw.slice(0),{extent,featureProjection:projection}));info.sourceLoads++}
+    catch(e){tile.setState(3);info.sourceErrors++;info.errors.push(String(e));}
+   })
+  });
+  const style=part.layer==='transportation'
+   ?{'stroke-color':'rgba(220,65,55,0.92)','stroke-width':3}
+   :{'fill-color':'rgba(210,194,169,0.52)','stroke-color':'#766655','stroke-width':1};
+  const layer=new WebGLVectorTileLayer({source,style,disableHitDetection:true});
+  styles.set(layer,style);return layer;
+ });
+ const view=new View({projection:proj,center:[16384,8192],resolution:64,constrainResolution:false});
+ const map=new OLMap({target:null,layers,view,controls:[]});
+ const canvas=document.getElementById('m5');
+ const backend=new WebGL1Backend(canvas,{contextAntialias:false,gpuCompletionMode:'blocking',cacheBindings:true});
+ const binding=await OpenLayersRendererBinding.createDirectScene({map,backend,canvas,
+  layerStyleResolver:layer=>styles.get(layer),
+  vectorTileOptions:{drawMode:'style-pass',stableStyleIdentityCache:true,olLayerFboComposition:true,closedLineJoins:true,polygonInsideSegmentFastPath:true,polygonEarBBoxPrecheck:true},
+  onError:d=>info.errors.push(String(d.error||d))});
+ binding.bridge.pipeline.tileScissorEnabled=true;binding.start({renderSync:false});
+ recovery.workerDefaultOff=(binding.deferredWorker===null);
+ if(!recovery.workerDefaultOff)throw Error('R63 CPU-first beta default Worker unexpectedly ON');
+ globalThis.__r63Fallback=(reason='injected-M5-fault')=>{
+  if(recovery.mode==='ol')return {...recovery};
+  recovery.reason=reason;
+  recovery.lastViewBefore={center:map.getView().getCenter().slice(),resolution:map.getView().getResolution(),rotation:map.getView().getRotation()};
+  recovery.olFrameAtFallback=info.frames;
+  binding.stop(); // stop actual M5 scene: tile subscriptions, CPU tile adapter, canvas
+  recovery.bindingStopped=!binding.started&&binding.layers.size===0;
+  document.getElementById('m5').style.display='none';
+  document.getElementById('olmap').style.left='0px';
+  map.renderSync();map.render();
+  recovery.mode='ol';recovery.rollbackCount++;
+  recovery.lastViewAfter={center:map.getView().getCenter().slice(),resolution:map.getView().getResolution(),rotation:map.getView().getRotation()};
+  return {...recovery};
+ };
+ globalThis.__r63Snapshot=()=>({
+  ...recovery,ready:info.ready,frames:info.frames,sourceLoads:info.sourceLoads,
+  sourceErrors:info.sourceErrors,errors:[...info.errors],
+  mapTargetAttached:!!map.getTargetElement(),webglCanvasCount:document.querySelectorAll('#olmap canvas').length,
+  m5Visible:document.getElementById('m5').style.display!=='none',
+  view:{center:map.getView().getCenter(),resolution:map.getView().getResolution(),rotation:map.getView().getRotation()}
+ });
+ map.setTarget(document.getElementById('olmap'));
+ let lastFrame=null;
+ map.on('postrender',e=>{info.frames++;lastFrame=e.frameState});
+ globalThis.__r53Snapshot=()=>{
+  const v=map.getView();
+  const details={ready:info.ready,frames:info.frames,sourceLoads:info.sourceLoads,sourceErrors:info.sourceErrors,
+   view:{center:v.getCenter(),resolution:v.getResolution(),rotation:v.getRotation()},
+   distinctInputs:manifest.sources.length,tiles:binding.snapshot().tileCount,drawPackets:binding.snapshot().drawPackets,
+   layerStates:binding.snapshot().layers,frameStats:binding.lastFrameStats,
+   activeKeys:[...binding.layers.values()].map(x=>[...x.pruner.lastActive]),
+   tilePackets:[...binding.bridge.tiles.entries()].map(([k,v])=>({key:k,packetCount:v.packets.length})),
+   frameExtent:lastFrame?.extent,frameSize:lastFrame?.size,errors:[...info.errors]};
+  if(lastFrame){
+   try{
+    const stats=binding.renderFrame(lastFrame),gl=backend.gl,bytes=new Uint8Array(512*512*4);
+    gl.finish();gl.readPixels(0,0,512,512,gl.RGBA,gl.UNSIGNED_BYTE,bytes);
+    let painted=0,h=2166136261;
+    for(let k=0;k<bytes.length;k++){if(k%4===3&&bytes[k])painted++;h=Math.imul(h^bytes[k],16777619)>>>0;}
+    details.painted=painted;details.hash=h.toString(16);details.glError=stats.glError;
+    const ext=gl.getExtension('WEBGL_debug_renderer_info');details.renderer=ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER);
+   }catch(e){details.errors.push(String(e.stack||e));}
+  }
+  return details;
+ };
+ info.ready=true;output('R63 ROLLBACK READY');
+ map.renderSync();
+}catch(e){info.errors.push(String(e.stack||e));output(info.errors.at(-1));}
+</script></body></html>
