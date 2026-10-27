@@ -1,7 +1,7 @@
 import { GeometryAllocator } from './GeometryAllocator.js';
 import { TextureCache } from './TextureCache.js';
-import { GpuBudgetController } from './GpuBudgetController.js';
-import { MaintenanceScheduler } from './MaintenanceScheduler.js';
+import { GpuBudgetController } from './resource-policies.js';
+import { MaintenanceScheduler } from './resource-policies.js';
 
 function toFloat32Bytes(value) {
   if (value == null) return new Uint8Array(16);

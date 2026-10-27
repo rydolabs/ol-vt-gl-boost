@@ -1,5 +1,5 @@
 import { OpenLayersAdapter } from './OpenLayersAdapter.js';
-import { OlLayerTreeAdapter } from './OlLayerTreeAdapter.js';
+import { OlLayerTreeAdapter } from './layer.js';
 import { OlVectorTileSourceAdapter } from './OlVectorTileSourceAdapter.js';
 import { OlVectorTileFramePruner } from './OlVectorTileFramePruner.js';
 

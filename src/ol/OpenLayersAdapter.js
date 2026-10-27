@@ -1,9 +1,9 @@
-import { OlFeatureAdapter } from './OlFeatureAdapter.js';
+import { OlFeatureAdapter } from './feature.js';
 import { toNeutralFrame } from './frame.js';
 import { OlSourceLifecycleAdapter } from './OlSourceLifecycleAdapter.js';
-import { toNeutralLayerState } from './layer-state.js';
-import { OlLayerLifecycleAdapter } from './layer-state.js';
-import { OlLayerTreeAdapter } from './OlLayerTreeAdapter.js';
+import { toNeutralLayerState } from './layer.js';
+import { OlLayerLifecycleAdapter } from './layer.js';
+import { OlLayerTreeAdapter } from './layer.js';
 import { OlVectorTileSourceAdapter } from './OlVectorTileSourceAdapter.js';
 
 /**

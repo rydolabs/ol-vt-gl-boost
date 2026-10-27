@@ -1,4 +1,4 @@
-import { materializeFlatPolygonRings } from '../tile/DirectFeaturePolygonBuffers.js';
+import { materializeFlatPolygonRings } from '../tile/polygon.js';
 import { olPolygonEndss, polygonPartsOlOrientation } from './PolygonRingGrouping.js';
 import { toNeutralStyles } from './OlStyleAdapter.js';
 import { packRenderFeatureLineInstances, packRenderFeatureGpuJoinNeighbors, packRenderFeatureGpuJoinNeighborsFused, referenceRenderFeatureFlatLine, preferFlatLineVertexWindow, referenceRenderFeatureGpuJoinDirect } from '../tile/RenderFeatureLinePacker.js';

@@ -1,4 +1,4 @@
-import { OlFeatureAdapter } from './OlFeatureAdapter.js';
+import { OlFeatureAdapter } from './feature.js';
 
 function on(source,type,fn){
   if(typeof source?.on==='function'){const key=source.on(type,fn);return ()=>{if(typeof source.un==='function')source.un(type,fn);else if(typeof key?.unlisten==='function')key.unlisten();};}

@@ -7,7 +7,7 @@
  * The ordinary OpenLayersRendererBinding is unchanged and remains the fallback.
  */
 import {OlCanvasHost} from './host.js';
-import {OlLayerTreeAdapter} from './OlLayerTreeAdapter.js';
+import {OlLayerTreeAdapter} from './layer.js';
 import {OlVectorTileSourceAdapter} from './OlVectorTileSourceAdapter.js';
 import {OlVectorTileFramePruner} from './OlVectorTileFramePruner.js';
 import {toNeutralFrame} from './frame.js';

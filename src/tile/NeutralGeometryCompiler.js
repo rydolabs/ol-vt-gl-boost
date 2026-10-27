@@ -1,4 +1,4 @@
-import { classifyFlatPolygon, encodeFlatPolygonIndexed } from './DirectFeaturePolygonBuffers.js';
+import { classifyFlatPolygon, encodeFlatPolygonIndexed } from './polygon.js';
 import { clipTriangleMeshToExtent } from './clip.js';
 import { classifyPolygonClip } from './clip.js';
 function xy(p){return [Number(p?.[0]??0),Number(p?.[1]??0)];}

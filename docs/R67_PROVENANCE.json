@@ -1,0 +1,81 @@
+{
+  "schema": "r67-feature-cohesion-v1",
+  "baseCommit": "d60cb69d98e7f44202c9a179d3369c683c930c2e",
+  "candidateCommit": "86aafd2f2a6b536c2d2db2baf174a12c28e4f4cc",
+  "original": "docs/REFACTOR_PROVENANCE.json",
+  "workerDefault": "off",
+  "r48CpuFallback": true,
+  "legacyPathRedirects": {
+    "src/gl/GpuBudgetController.js": "src/gl/resource-policies.js",
+    "src/gl/MaintenanceScheduler.js": "src/gl/resource-policies.js",
+    "src/ol/layer-state.js": "src/ol/layer.js",
+    "src/ol/OlLayerTreeAdapter.js": "src/ol/layer.js",
+    "src/ol/OlGeometryAdapter.js": "src/ol/feature.js",
+    "src/ol/OlFeatureAdapter.js": "src/ol/feature.js",
+    "src/tile/DirectFeatureFlatTriangulation.js": "src/tile/polygon.js",
+    "src/tile/DirectFeaturePolygonBuffers.js": "src/tile/polygon.js"
+  },
+  "changedBlobs": [
+    {
+      "path": "src/gl/ResourceManager.js",
+      "gitBlobSha1": "2c0d511106677288f070ca1208ca00f4150ffb24"
+    },
+    {
+      "path": "src/ol/scene.js",
+      "gitBlobSha1": "1d77a709120ef43a9b3d35b6b901b3e3df80228f"
+    },
+    {
+      "path": "src/ol/OlMapSceneAdapter.js",
+      "gitBlobSha1": "8ea8113064b14f1d20060e9c8eadf536bf696115"
+    },
+    {
+      "path": "src/ol/OpenLayersAdapter.js",
+      "gitBlobSha1": "20ad60da536d5619dc166155b7449ffd3cecc026"
+    },
+    {
+      "path": "src/ol/OlSourceLifecycleAdapter.js",
+      "gitBlobSha1": "c7e53416cc041019c5678a4b67642dd5c6dc95e1"
+    },
+    {
+      "path": "src/ol/OlVectorTileFeatureAdapter.js",
+      "gitBlobSha1": "5a2055ee83fd4d68df7d2e311d7eff8ad67724ba"
+    },
+    {
+      "path": "src/gl/pipeline.js",
+      "gitBlobSha1": "bc133b1ca16f19a5ebd44aabba87a231275d75d9"
+    },
+    {
+      "path": "src/tile/NeutralGeometryCompiler.js",
+      "gitBlobSha1": "ec243ed1c36752dc54ca217026b86cefbf4e545b"
+    },
+    {
+      "path": "src/gl/resource-policies.js",
+      "gitBlobSha1": "e742c5ad437847251f528d5b7ae53be2dd755c5f"
+    },
+    {
+      "path": "src/ol/layer.js",
+      "gitBlobSha1": "e3850ef23f0b28ea9705a2b89f5a70d55db39512"
+    },
+    {
+      "path": "src/ol/feature.js",
+      "gitBlobSha1": "4d10fed62032aef91a0bcef9bf5b4c46119a7a9f"
+    },
+    {
+      "path": "src/tile/polygon.js",
+      "gitBlobSha1": "4addd7e90b298535ade0d6db05c140f3aa22947c"
+    },
+    {
+      "path": "src/OLVectorTileBoost.js",
+      "gitBlobSha1": "fb7ff979dceae8c9f5dcee53bf28de0886e5971c"
+    },
+    {
+      "path": "src/index.js",
+      "gitBlobSha1": "80925c28f4137816698cff43c05ca487dd7fed7f"
+    }
+  ],
+  "originalR64FileCount": 57,
+  "newSourceFileCount": 54,
+  "originalR64ExecutableCount": 56,
+  "newExecutableCount": 53,
+  "validation": "R64 archived origin SHA256 remains immutable, R67 modified and consolidated blobs pinned by git SHA1"
+}
