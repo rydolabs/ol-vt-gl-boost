@@ -47,7 +47,7 @@ for(const patch of overrides){
 }
 await mkdir(join(project,'artifacts'),{recursive:true});
 await writeFile(join(project,'artifacts/r69-patch-audit.json'),
-  JSON.stringify({schema:'r69-audit-v1',legacyDelta,overrideCount:overrides.length},null,2)+'\\n');
+  JSON.stringify({schema:'r69-audit-v1',legacyDelta,overrideCount:overrides.length},null,2)+'\n');
 console.log('R69_VENDOR_PATCH_AUDIT',JSON.stringify({overrides:overrides.length,files:legacyDelta.length}));
 if(count<5)throw Error('R69 npm install is incomplete');
 const report={schema:'olvt-r69-generated-vendor-v1',required,copiedRootDirs:count,
