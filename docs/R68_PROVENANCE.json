@@ -28,6 +28,10 @@
     {
       "path": "src/compat/VectorRenderer.js",
       "gitBlobSha1": "9bb816ccba2b8468f0da0f7a97cb2bca5dcf9003"
+    },
+    {
+      "path": "src/compat/renderers.js",
+      "gitBlobSha1": "635a357fb7a8daad9194a090c50ee4e2019d6577"
     }
   ],
   "priorSourceExecutableCount": 53,
