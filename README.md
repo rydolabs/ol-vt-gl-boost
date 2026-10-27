@@ -4,6 +4,32 @@
 
 The repository keeps OpenLayers Map / View / VectorTileSource integration while providing a direct geometry-to-GPU pipeline, a strict CPU line-join fallback for pixel correctness, and an optional deferred Worker (default **OFF**). **Experimental: not production-approved.**
 
+## Simplified API (R67 review branch)
+
+`OLVectorTileBoost` composes the existing `DirectM5SceneBinding` and `WebGL1Backend` behind **one opt-in lifecycle object**. Unlike the old entrypoint, callers do not have to manually construct both components:
+
+```js
+import {OLVectorTileBoost} from './src/index.js';
+
+// map: an already configured OL Map with supported VectorTile layers.
+// canvas: a separately managed WebGL overlay (see runnable side-by-side example).
+const boost = new OLVectorTileBoost({
+  map, canvas,
+  vectorTileOptions: {
+    drawMode: 'style-pass', stableStyleIdentityCache: true,
+    olLayerFboComposition: true, closedLineJoins: true
+  },
+  layerStyleResolver: layer => styles.get(layer),
+  onError: ({error}) => { /* host-owned fail-closed fallback to stock OL */ }
+});
+boost.start({renderSync: false});
+// ... after the host decides to restore stock OL:
+boost.stop();
+boost.destroy();
+```
+
+The API is **not a package release or production replacement**. The application must manage the overlay, supported layer types and actual stock-OL restoration. Deferred Worker remains **OFF unless explicitly opted in**. The tested legacy `DirectM5SceneBinding` entrypoint remains exported for compatibility. Source structure and verification: [R67 consolidation details](docs/R67_CORE_CONSOLIDATION.md).
+
 ## Usage example — stock OpenLayers vs OL VT GL Boost
 
 A **runnable side-by-side example** is included: [examples/compare/index.html](examples/compare/index.html). It uses OpenLayers **10.10.0** on the left and the **same OpenLayers Map / View / VectorTileSource APIs** with the direct WebGL1 rendering pipeline on the right.
