@@ -4,7 +4,15 @@
 
 The repository keeps OpenLayers Map / View / VectorTileSource integration while providing a direct geometry-to-GPU pipeline, a strict CPU line-join fallback for pixel correctness, and an optional deferred Worker (default **OFF**). **Experimental: not production-approved.**
 
-## Simplified API (R67 review branch)
+## R68 — legacy compatibility consolidation (review branch)
+
+Legacy renderer internals now share cohesive modules, without changing ordering or CPU/GPU math: `src/compat/core/stores.js` groups `GeometryStore`, `StyleStore`, `DirtyTracker`; `src/compat/core/schedule.js` groups reference storage and rendering schedule; packed path order is colocated with `RendererKernel`. The default direct `OLVectorTileBoost` API, Worker-OFF behavior and R48 CPU line-join fallback remain unchanged.
+
+`src/compat/` executable modules: **16 → 12**; all `src/` executable modules: **53 → 49** relative to R67. Git history and `docs/R68_PROVENANCE.json` preserve original R64/R67 source checksums and pin every R68-changed runtime file.
+
+Run `npm test`, `npm run test:contract`, `npm run test:facade`, `npm run test:examples`, and `npm run test:compat` on Node 22. GitHub Actions runs all checks on Ubuntu and Windows. **Physical RTX OL pixel/tile and fallback tests must be rerun against this R68 head before it is merged.** Production remains NO-GO.
+
+## Simplified API (R67 main)
 
 `OLVectorTileBoost` composes the existing `DirectM5SceneBinding` and `WebGL1Backend` behind **one opt-in lifecycle object**. Unlike the old entrypoint, callers do not have to manually construct both components:
 

@@ -30,3 +30,6 @@ jobs:
 
       - name: Verify unified facade API
         run: npm run test:facade
+
+      - name: Verify legacy compatibility module consolidation
+        run: npm run test:compat
