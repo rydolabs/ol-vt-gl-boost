@@ -14,7 +14,8 @@
     "test:facade": "node tests/verify_r67_facade.mjs",
     "test:compat": "node tests/verify_r68_compat.mjs",
     "postinstall": "node scripts/restore-vendor-runtime.mjs",
-    "prepare:vendor": "node scripts/restore-vendor-runtime.mjs"
+    "prepare:vendor": "node scripts/restore-vendor-runtime.mjs",
+    "test:vendor": "node tests/verify_r69_vendor.mjs"
   },
   "engines": {
     "node": ">=22 <24"
