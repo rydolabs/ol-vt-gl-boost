@@ -11,11 +11,11 @@
  */
 import {toNeutralStyles,toRendererStyle} from '../ol/OlStyleAdapter.js';
 import {olPolygonRangesWithBounds} from '../ol/PolygonRingGrouping.js';
-import {appendFlatPolygonIndexedDirect,materializeFlatPolygonRings} from '../tile/DirectFeaturePolygonBuffers.js';
+import {appendFlatPolygonIndexedDirect,materializeFlatPolygonRings} from '../tile/polygon.js';
 import {validClipExtent,clipPolylineToExtent,forEachClippedTriangle} from '../tile/clip.js';
 import {EarcutPolygonTriangulator} from '../tile/EarcutPolygonTriangulator.js';
 import {triangulateSimpleRing} from '../tile/NeutralGeometryCompiler.js';
-import {triangulateEarcutFlat,triangulateSimpleFlat} from '../tile/DirectFeatureFlatTriangulation.js';
+import {triangulateEarcutFlat,triangulateSimpleFlat} from '../tile/polygon.js';
 import {packRenderFeatureLineInstances,appendRenderFeatureGpuJoinNeighborsDirect} from '../tile/RenderFeatureLinePacker.js';
 import {lineVertexShader,lineGpuJoinVertexShader,lineFragmentShader} from './shaders.js';
 import {LineRenderer} from './LineRenderer.js';
