@@ -1,14 +1,14 @@
 import { RendererKernel } from './core/RendererKernel.js';
-import { GeometryStore } from './core/GeometryStore.js';
-import { StyleStore } from './core/StyleStore.js';
+import { GeometryStore } from './core/stores.js';
+import { StyleStore } from './core/stores.js';
 import { RenderCompiler } from './core/RenderCompiler.js';
-import { DirtyTracker } from './core/DirtyTracker.js';
-import { RenderReferenceStore } from './core/RenderReferenceStore.js';
+import { DirtyTracker } from './core/stores.js';
+import { RenderReferenceStore } from './core/schedule.js';
 import { PolygonRenderer } from './renderers.js';
 import { LineRenderer } from '../gl/LineRenderer.js';
 import { PointRenderer } from './renderers.js';
 import { ResourceManager } from '../gl/ResourceManager.js';
-import { RenderSchedule } from './core/RenderSchedule.js';
+import { RenderSchedule } from './core/schedule.js';
 
 /**
  * Default composition root.
