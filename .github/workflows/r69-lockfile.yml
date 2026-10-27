@@ -37,6 +37,7 @@ jobs:
           name: r69-npm-lockfile-candidate
           path: |
             package-lock.json
+            artifacts/r69-patch-audit.json
             vendor/openlayers-10.10.0-runtime/GENERATED_MANIFEST.json
           retention-days: 30
           if-no-files-found: warn
