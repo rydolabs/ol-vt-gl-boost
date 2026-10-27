@@ -10,7 +10,8 @@
     "test:rtx": "node scripts/run-rtx-matrix.mjs",
     "test:rtx:rollback": "node tests/rtx/run_real_ol_fallback.mjs . artifacts/rtx-rollback",
     "example:compare": "node examples/compare/serve.mjs",
-    "test:examples": "node tests/verify_example_contract.mjs"
+    "test:examples": "node tests/verify_example_contract.mjs",
+    "test:facade": "node tests/verify_r67_facade.mjs"
   },
   "engines": {
     "node": ">=22 <24"

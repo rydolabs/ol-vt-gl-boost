@@ -27,3 +27,6 @@ jobs:
 
       - name: Validate side-by-side OL 10.10.0 and Boost example
         run: npm run test:examples
+
+      - name: Verify unified facade API
+        run: npm run test:facade
