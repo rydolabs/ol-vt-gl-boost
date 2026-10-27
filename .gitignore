@@ -2,3 +2,7 @@
 /artifacts/
 /RESULTS/
 /tests/fixtures/r46-data/
+
+# R69: generated from package-lock.json by npm ci/postinstall
+/vendor/openlayers-10.10.0-runtime/node_modules/
+/vendor/openlayers-10.10.0-runtime/GENERATED_MANIFEST.json

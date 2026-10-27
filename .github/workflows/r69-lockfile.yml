@@ -1,0 +1,42 @@
+name: R69 npm lockfile and runtime reproduction probe
+on:
+  push:
+    branches: [refactor/r69-vendor-npm-lock]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lock-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate lockfile with pinned OpenLayers 10.10.0 packages
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install exactly from generated lockfile and stage runtime
+        run: npm ci --no-audit --no-fund
+      - name: Check 17 regressions and original source contracts
+        run: |
+          npm test
+          npm run test:contract
+          npm run test:examples
+          npm run test:facade
+          npm run test:compat
+      - name: Verify generated runtime and package licenses
+        run: |
+          test -f vendor/openlayers-10.10.0-runtime/node_modules/ol/package.json
+          test -f vendor/openlayers-10.10.0-runtime/node_modules/ol/LICENSE.md
+          node -e "console.log(require('./vendor/openlayers-10.10.0-runtime/node_modules/ol/package.json').version)"
+      - name: Keep candidate lockfile and runtime manifest for review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r69-npm-lockfile-candidate
+          path: |
+            package-lock.json
+            vendor/openlayers-10.10.0-runtime/GENERATED_MANIFEST.json
+          retention-days: 30
+          if-no-files-found: warn

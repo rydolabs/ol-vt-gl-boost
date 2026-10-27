@@ -12,9 +12,18 @@
     "example:compare": "node examples/compare/serve.mjs",
     "test:examples": "node tests/verify_example_contract.mjs",
     "test:facade": "node tests/verify_r67_facade.mjs",
-    "test:compat": "node tests/verify_r68_compat.mjs"
+    "test:compat": "node tests/verify_r68_compat.mjs",
+    "postinstall": "node scripts/restore-vendor-runtime.mjs",
+    "prepare:vendor": "node scripts/restore-vendor-runtime.mjs"
   },
   "engines": {
     "node": ">=22 <24"
+  },
+  "dependencies": {
+    "ol": "10.10.0",
+    "pbf": "5.1.2",
+    "earcut": "3.2.3",
+    "rbush": "4.0.1",
+    "quickselect": "3.0.0"
   }
 }
