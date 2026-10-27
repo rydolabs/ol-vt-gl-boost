@@ -11,23 +11,34 @@ assert.equal(typeof DirectM5SceneBinding,'function');
 assert.equal(typeof OLVectorTileBoost,'function');
 const legacy=JSON.parse(text('docs/REFACTOR_PROVENANCE.json'));
 const original=JSON.parse(text('docs/SOURCE_PROVENANCE.json'));
-const current=JSON.parse(text('docs/R67_PROVENANCE.json'));
-assert.equal(legacy.workerDefault,'off');assert.equal(current.workerDefault,'off');
+const r67=JSON.parse(text('docs/R67_PROVENANCE.json'));
+const r68=JSON.parse(text('docs/R68_PROVENANCE.json'));
+assert.equal(legacy.workerDefault,'off');
+assert.equal(r67.workerDefault,'off');assert.equal(r68.workerDefault,'off');
 assert.equal(legacy.fileMapping.length,62);
-assert.equal(current.originalR64ExecutableCount,56);
-assert.equal(current.newExecutableCount,53);
-const changed=new Map(current.changedBlobs.map(x=>[x.path,x.gitBlobSha1]));
+assert.equal(r67.originalR64ExecutableCount,56);assert.equal(r67.newExecutableCount,53);
+assert.equal(r68.priorSourceExecutableCount,53);assert.equal(r68.newSourceExecutableCount,49);
+const previous=new Map(r67.changedBlobs.map(x=>[x.path,x.gitBlobSha1]));
+const changed=new Map(r68.changedBlobs.map(x=>[x.path,x.gitBlobSha1]));
 const hashedGitBlob=(path)=>{
-  const content=bytes(path);
-  return createHash('sha1').update('blob '+content.length+'\0').update(content).digest('hex');
+ const content=bytes(path);
+ return createHash('sha1').update('blob '+content.length+'\0').update(content).digest('hex');
 };
 for(const row of legacy.fileMapping){
-  assert.equal(original.files.find(f=>f.path===row.original)?.sha256,row.oldSha256,row.original);
-  const newPath=current.legacyPathRedirects[row.new]??row.new;
-  assert(existsSync(newPath),newPath+' must be tracked at new layout');
-  if(changed.has(newPath))assert.equal(hashedGitBlob(newPath),changed.get(newPath),newPath);
-  else assert.equal(createHash('sha256').update(bytes(newPath)).digest('hex'),row.newSha256,row.new);
+ assert.equal(original.files.find(f=>f.path===row.original)?.sha256,row.oldSha256,row.original);
+ const mapped67=r67.legacyPathRedirects[row.new]??row.new;
+ const mapped68=r68.redirects[mapped67]??mapped67;
+ assert(existsSync(mapped68),mapped68+' missing from R68 layout');
+ if(changed.has(mapped68))assert.equal(hashedGitBlob(mapped68),changed.get(mapped68),mapped68);
+ else if(previous.has(mapped68))assert.equal(hashedGitBlob(mapped68),previous.get(mapped68),mapped68);
+ else assert.equal(createHash('sha256').update(bytes(mapped68)).digest('hex'),row.newSha256,row.new);
+}
+for(const [path,sha] of previous){
+ const dst=r68.redirects[path]??path;
+ if(changed.has(dst))continue;
+ assert.equal(hashedGitBlob(dst),sha,path);
 }
 for(const [path,sha] of changed)assert.equal(hashedGitBlob(path),sha,path);
-for(const old of Object.keys(current.legacyPathRedirects))assert(!existsSync(old),'old module should be deleted: '+old);
-console.log('R67_SOURCE_CONTRACT_PASS',legacy.fileMapping.length,changed.size);
+for(const old of [...Object.keys(r67.legacyPathRedirects),...Object.keys(r68.redirects)])
+ assert(!existsSync(old),'old module should be deleted: '+old);
+console.log('R68_SOURCE_CONTRACT_PASS',legacy.fileMapping.length,previous.size,changed.size);
