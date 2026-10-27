@@ -3,6 +3,7 @@ import {GeometryStore,StyleStore,DirtyTracker} from '../src/compat/core/stores.j
 import {RenderReferenceStore,RenderSchedule} from '../src/compat/core/schedule.js';
 import {expandPackedPathOrder,RendererKernel} from '../src/compat/core/RendererKernel.js';
 import {WebGLVectorRenderer} from '../src/compat/VectorRenderer.js';
+import {PointRenderer,PolygonRenderer} from '../src/compat/renderers.js';
 const geo=new GeometryStore();
 const inserted=geo.upsert('road',{kind:'line'});
 assert.equal(inserted.created,true);assert.equal(geo.upsert('road',{kind:'line'}).id,inserted.id);
@@ -24,4 +25,6 @@ assert.deepEqual(expanded.map(x=>x.order),[5,6]);
 assert.deepEqual(expanded.map(x=>x.packedPathStart),[0,2]);
 assert.equal(typeof RendererKernel,'function');
 assert.equal(typeof WebGLVectorRenderer,'function');
+assert.equal(new PointRenderer().type,'point');
+assert.equal(new PolygonRenderer().type,'polygon');
 console.log('R68_COMPAT_CONSOLIDATION_PASS');
