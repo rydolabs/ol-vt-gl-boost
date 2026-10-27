@@ -29,7 +29,9 @@ async function scan(directory,prefix=''){
     if(!next||!prior.equals(next))overrides.push({path:rel,bytes:prior});
   }
 }
-await scan(target);
+try{await scan(target);}catch(error){if(error.code!=='ENOENT')throw error;}
+const expected=new Set(['earcut/src/earcut.js','ol/format/MVT.worker.js']);
+for(const delta of legacyDelta)if(!expected.has(delta.path))throw Error('Unexpected vendored npm mismatch: '+delta.path);
 await rm(target,{recursive:true,force:true});
 await mkdir(target,{recursive:true});
 let count=0;
@@ -39,16 +41,17 @@ for(const dir of await readdir(installed,{withFileTypes:true})){
   await cp(join(installed,dir.name),join(target,dir.name),{recursive:true,force:true,errorOnExist:false});
   count++;
 }
-// During transition, preserve differing vendored files instead of silently losing patches.
-for(const patch of overrides){
-  const dest=join(target,...patch.path.split('/'));
+// Preserve *explicitly tracked* patched files when the historic vendor tree is absent.
+for(const name of ['earcut/src/earcut.js','ol/format/MVT.worker.js']){
+  const dest=join(target,...name.split('/'));
+  const bytes=await readFile(join(project,'vendor/overrides',...name.split('/')));
   await mkdir(resolve(dest,'..'),{recursive:true});
-  await writeFile(dest,patch.bytes);
+  await writeFile(dest,bytes);
 }
 await mkdir(join(project,'artifacts'),{recursive:true});
 await writeFile(join(project,'artifacts/r69-patch-audit.json'),
   JSON.stringify({schema:'r69-audit-v1',legacyDelta,overrideCount:overrides.length},null,2)+'\n');
-console.log('R69_VENDOR_PATCH_AUDIT',JSON.stringify({overrides:overrides.length,files:legacyDelta.length}));
+console.log('R69_VENDOR_PATCH_AUDIT',JSON.stringify({overrides:overrides.length,files:legacyDelta.length,trackedPatches:2}));
 if(count<5)throw Error('R69 npm install is incomplete');
 const report={schema:'olvt-r69-generated-vendor-v1',required,copiedRootDirs:count,
   reproduction:'npm ci -> postinstall (npm lockfile)',licenses:'original installed package licenses copied'};

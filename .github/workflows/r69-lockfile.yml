@@ -4,7 +4,7 @@ on:
     branches: [refactor/r69-vendor-npm-lock]
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   lock-probe:
     runs-on: ubuntu-latest
@@ -16,6 +16,15 @@ jobs:
           node-version: '22'
       - name: Generate lockfile with pinned OpenLayers 10.10.0 packages
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Commit newly generated package-lock.json to this R69 branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "build(r69): pin npm dependency resolution to lockfile"
+            git push origin HEAD:refactor/r69-vendor-npm-lock
+          fi
       - name: Install exactly from generated lockfile and stage runtime
         run: npm ci --no-audit --no-fund
       - name: Check 17 regressions and original source contracts
