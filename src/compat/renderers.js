@@ -98,3 +98,11 @@ export class SimpleRenderer {
 
 // Origin: src/renderer/renderers/PolygonRenderer.js
 
+/** Legacy typed renderer exports (lost when R64 combined empty forwarding modules). */
+export class PointRenderer extends SimpleRenderer {
+  constructor(){ super('point'); }
+}
+
+export class PolygonRenderer extends SimpleRenderer {
+  constructor(){ super('polygon'); }
+}
