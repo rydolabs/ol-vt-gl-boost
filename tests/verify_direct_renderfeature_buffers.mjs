@@ -16,7 +16,7 @@ import {RendererFeatureSink} from '../src/compat/RendererFeatureSink.js';
 import {toRendererStyle} from '../src/ol/OlStyleAdapter.js';
 import {LineRenderer,createLineInstanceDataFromGeometry} from '../src/gl/LineRenderer.js';
 import {ResourceManager} from '../src/gl/ResourceManager.js';
-import {RenderSchedule} from '../src/compat/core/RenderSchedule.js';
+import {RenderSchedule} from '../src/compat/core/schedule.js';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
 const styles=[{'stroke-color':'#b45157','stroke-width':1},{'stroke-color':'#3a7898','stroke-width':2},{'stroke-color':'#679a4d','stroke-width':3},{'stroke-color':'#9b7542','stroke-width':4}];
