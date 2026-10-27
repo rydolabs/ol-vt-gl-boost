@@ -7,7 +7,11 @@ permissions:
   contents: read
 jobs:
   lock-probe:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -16,6 +20,8 @@ jobs:
           node-version: '22'
       - name: Generate lockfile with pinned OpenLayers 10.10.0 packages
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Verify lockfile is already pinned
+        run: git diff --exit-code -- package-lock.json
       - name: Install exactly from generated lockfile and stage runtime
         run: npm ci --no-audit --no-fund
       - name: Check 17 regressions and original source contracts
@@ -25,16 +31,15 @@ jobs:
           npm run test:examples
           npm run test:facade
           npm run test:compat
+          npm run test:vendor
       - name: Verify generated runtime and package licenses
         run: |
-          test -f vendor/openlayers-10.10.0-runtime/node_modules/ol/package.json
-          test -f vendor/openlayers-10.10.0-runtime/node_modules/ol/LICENSE.md
-          node -e "console.log(require('./vendor/openlayers-10.10.0-runtime/node_modules/ol/package.json').version)"
+          npm run test:vendor
       - name: Keep candidate lockfile and runtime manifest for review
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: r69-npm-lockfile-candidate
+          name: r69-npm-lockfile-candidate-${{ matrix.os }}
           path: |
             package-lock.json
             artifacts/r69-patch-audit.json
