@@ -92,6 +92,26 @@ export class OlStockRenderGate {
     }
     for(const key of [...this._requested.keys()])if(!live.has(key))this._requested.delete(key);
   }
+  /**
+   * Prime actual source tiles before the first render when a configured OL
+   * View and sized optimized canvas are already available. This uses only
+   * public View.calculateExtent + VectorTileSource APIs; postrender remains
+   * the fallback for hosts that do not yet have a measurable viewport.
+   */
+  _primeInitialView(){
+    const view=this.map.getView?.(),canvas=this.scene.canvasHost?.canvas??this.scene.canvas;
+    const ratio=Number(globalThis.devicePixelRatio??1);
+    const pixelRatio=Number.isFinite(ratio)&&ratio>0?ratio:1;
+    const size=this.map.getSize?.()??(canvas?[
+      Number(canvas.clientWidth||canvas.width/pixelRatio),
+      Number(canvas.clientHeight||canvas.height/pixelRatio)
+    ]:null);
+    if(!view?.calculateExtent||!size||size.length<2||!size.every?.(v=>Number.isFinite(v)&&v>0))return;
+    const projection=view.getProjection?.(),resolution=view.getResolution?.();
+    if(!projection||!Number.isFinite(resolution)||resolution<=0)return;
+    const extent=view.calculateExtent(size);
+    this._demand({extent,pixelRatio,size,viewState:{projection,resolution}});
+  }
   start(){
     if(this.active)return this;
     if(!this.scene.started)throw Error('Start the optimized scene before OlStockRenderGate');
@@ -99,6 +119,7 @@ export class OlStockRenderGate {
     try{
       this._sync();
       this._listener=this.map.on?.('postrender',this._onFrame)||null;
+      this._primeInitialView();
       if(typeof this.map.on!=='function')throw Error('OL map.on required');
       this.map.render?.();
       return this;
