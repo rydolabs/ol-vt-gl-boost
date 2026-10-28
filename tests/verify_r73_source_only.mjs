@@ -45,4 +45,25 @@ broken.start();map.emit('postrender',{frameState});
 assert.match(String(fault),/source error/);assert.equal(broken.active,false);
 assert.equal(failedLayer.render(),'stock OL','fault must restore stock OL immediately');
 assert.throws(()=>new OLVectorTileBoost({map:undefined}),/requires an OpenLayers map/);
+// A scene-level GPU failure must release the gate even if the OL map has
+// not been dismantled by a host callback. Stock OL is immediately restorable.
+class FacadeMap extends MapMock {
+  getLayerGroup(){return {getLayers:()=>({getArray:()=>[]})};}
+}
+const fm=new FacadeMap(),canvas={width:512,height:512,style:{display:'block'}};
+let notified=null;
+const host=new OLVectorTileBoost({map:fm,backend:{canvas,gl:{}},
+  stockOlRenderMode:'source-only',onError:info=>notified=info});
+host.start({renderSync:false});
+assert.equal(host.sourceOnlyActive,true);
+try{fm.emit('postrender',{frameState});}catch{}
+assert.equal(host.failed,true);
+assert.equal(host.sourceOnlyActive,false);
+assert.equal(host.started,false);
+assert.equal(canvas.style.display,'none');
+assert(notified?.error instanceof Error,'scene error must be propagated to caller');
+host.start({renderSync:false});
+assert.equal(host.sourceOnlyActive,true);
+assert.equal(canvas.style.display,'block','restart must restore original overlay style');
+host.stop();
 console.log('R73_SOURCE_ONLY_GATE_LIFECYCLE_PASS');
