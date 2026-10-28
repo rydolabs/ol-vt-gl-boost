@@ -1,0 +1,27 @@
+{
+  "schema": "olvt-r69-npm-package-overlays",
+  "from": "ol 10.10.0 npm registry",
+  "sourceBase": "2df183b7df8c7b54813328431d88913690dbe0d3",
+  "patches": [
+    {
+      "relative": "earcut/src/earcut.js",
+      "source": "vendor/openlayers-10.10.0-runtime/node_modules/earcut/src/earcut.js",
+      "overlay": "vendor/overrides/earcut/src/earcut.js",
+      "gitBlobSha1": "cfecdeb4460149508c88ac0571a23a8544755008"
+    },
+    {
+      "relative": "ol/format/MVT.worker.js",
+      "source": "vendor/openlayers-10.10.0-runtime/node_modules/ol/format/MVT.worker.js",
+      "overlay": "vendor/overrides/ol/format/MVT.worker.js",
+      "gitBlobSha1": "5d5f66f0550b395b3cd5f7a1dbf44f08a8a6ebb3"
+    }
+  ],
+  "packages": {
+    "ol": "10.10.0",
+    "pbf": "5.1.2",
+    "earcut": "3.2.3",
+    "rbush": "4.0.1",
+    "quickselect": "3.0.0"
+  },
+  "licenseNote": "Copies installed npm package licenses plus two source-overrides from original vendored runtime"
+}

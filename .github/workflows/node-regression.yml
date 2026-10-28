@@ -20,6 +20,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Restore pinned OpenLayers runtime via npm ci
+        run: npm ci --no-audit --no-fund
       - name: Verify 17 core CPU/Worker regressions
         run: npm test
       - name: Verify default OFF, R48 fallback, and original/new source bytes
@@ -33,3 +35,6 @@ jobs:
 
       - name: Verify legacy compatibility module consolidation
         run: npm run test:compat
+
+      - name: Validate lockfile-based vendor overlay runtime
+        run: npm run test:vendor

@@ -19,6 +19,8 @@ jobs:
           $g=@(Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion)
           if(-not ($g|Where-Object{$_.Name -match 'NVIDIA.*RTX 5060 Ti'})){throw 'Physical NVIDIA RTX 5060 Ti required'}
           $g | ConvertTo-Json -Depth 4
+      - name: Restore package runtime from pinned npm lock
+        run: npm ci --no-audit --no-fund
       - name: Node and strict source regression
         run: |
           npm test
