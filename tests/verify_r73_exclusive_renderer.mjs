@@ -71,8 +71,10 @@ assert.equal(emptyBoost.failed,true);
 assert.equal(emptyCanvas.style.display,'none','Unsafe exclusive initialization hides the overlay');
 assert.equal(emptyBoost.started,false,'Unsafe exclusive initialization stops optimized scene');
 
+const sharedGrid={};const sharedProjection={};
+const stableState=()=>({source:{getTileGrid:()=>sharedGrid,getProjection:()=>sharedProjection}});
 const candidate={vectorTileOptions:{isolatedTileFboFastPath:true,olLayerFboComposition:true},
-  bridge:{pipeline:{tileScissorEnabled:true}},layers:new Map([['one',{}],['two',{}]])};
+  bridge:{pipeline:{tileScissorEnabled:true}},layers:new Map([['one',stableState()],['two',stableState()]])};
 const entry=(layer,coord,offset=0)=>({tileKey:layer+'::'+coord,worldOffsetX:offset});
 const disjoint=[entry('a','0/0/0'),entry('a','0/0/0'),entry('b','0/1/0')];
 const frame={viewState:{rotation:0}};
@@ -82,6 +84,14 @@ assert.equal(safe.call(candidate,[entry('a','0/0/0'),entry('b','0/0/0')],frame),
 assert.equal(safe.call(candidate,[entry('a','0/0/0'),entry('b','1/1/0')],frame),false,'Mixed zooms MUST retain FBO');
 assert.equal(safe.call(candidate,[entry('a','0/0/0'),entry('b','0/1/0',100)],frame),false,'Wrapped worlds MUST retain FBO');
 assert.equal(safe.call(candidate,disjoint,{viewState:{rotation:0.3}}),false,'Rotation MUST retain FBO');
+const second=candidate.layers.get('two');
+const originalSource=second.source;
+second.source={getTileGrid:()=>({}),getProjection:()=>sharedProjection};
+assert.equal(safe.call(candidate,disjoint,frame),false,'Mismatched tile grids MUST retain FBO');
+second.source=originalSource;
+candidate.vectorTileOptions.coordinateTransform=()=>{};
+assert.equal(safe.call(candidate,disjoint,frame),false,'Coordinate warps MUST retain FBO');
+delete candidate.vectorTileOptions.coordinateTransform;
 candidate.bridge.pipeline.tileScissorEnabled=false;
 assert.equal(safe.call(candidate,disjoint,frame),false,'Missing tile scissor MUST retain FBO');
 candidate.bridge.pipeline.tileScissorEnabled=true;
