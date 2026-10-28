@@ -1,0 +1,21 @@
+{
+  "schema": "r73-exclusive-ol-renderer-v1",
+  "baseCommit": "6ebd9eb7fffb66b637e5f7b0b03fb62d7b0dee8b",
+  "olVersion": "10.10.0",
+  "workerDefault": "off",
+  "optIn": true,
+  "stockMode": "exclusive",
+  "changedFacade": {
+    "path": "src/OLVectorTileBoost.js",
+    "gitBlobSha1": "e12b03c44d989c584e55f769aefb8334ace38fcf"
+  },
+  "newHost": {
+    "path": "src/ol/OlExclusiveVectorTileRenderHost.js",
+    "gitBlobSha1": "7be6faaa9099b3224d265240e3c61b81ae92283c"
+  },
+  "sourceCountBefore": 49,
+  "sourceCountAfter": 50,
+  "performanceGate": ">=50% first complete frame latency reduction relative to OL 10.10.0 for 8, 16, 32 independent MVTs; RTX ABBA all three",
+  "correctnessGate": "physical RTX 12/12 RGBA8 and tile ID, stock OL rollback, Ubuntu+Windows regression",
+  "note": "Experimental per-instance OL layer.render interception; dynamic layer changes fail closed. No production approval."
+}
