@@ -50,7 +50,7 @@ const hashedGitBlob=(path)=>{
    const endFrameOld="    this.lastFrameStats=this.backend.endFrame();this.frames++;\\n".replaceAll('\\n','\n');
    const endFrameNew="    this.lastFrameStats=this.backend.endFrame();this.frames++;\\n    if(this.lastFrameStats?.glError)throw Error('RGBA8 layer composition GL error '+this.lastFrameStats.glError);\\n".replaceAll('\\n','\n');
    const compositorNew="    flush(group);\\n    // Backend.endFrame performs the single required GL error query after\\n    // all compositor passes and GPU completion, without a duplicate sync.\\n    gl.bindFramebuffer(gl.FRAMEBUFFER,null);\\n    b.invalidateStateCache();".replaceAll('\\n','\n');
-   assert(current.includes(newDraw)&&current.includes(compositorNew)&&current.includes(endFrameNew),'Unexpected R73 GL compositor patch');
+   assert(current.includes(newDraw)&&current.includes(compositorNew),'Unexpected R73 GL compositor patch');
    // Restore only the R73 opt-in disjoint-tile FBO shortcut before verifying
    // the precise prior compositor's historical Git blob SHA.
    const fastStart=current.indexOf('  /**\\n   * Opt-in R73 shortcut'.replaceAll('\\n','\n'));
@@ -65,6 +65,7 @@ const hashedGitBlob=(path)=>{
    const oldFinish="this.lastFrameStats=this.backend.endFrame();this.frames++;";
    assert(withoutFast.includes(newFinish),'R73 guarded completion marker missing');
    withoutFast=withoutFast.replace(newFinish,oldFinish);
+   assert(withoutFast.includes(endFrameNew),'Unexpected R73 GPU completion gate');
    const optimizedReverted=withoutFast.replace(compositorNew,newEnd).replace(endFrameNew,endFrameOld);
    assert(optimizedReverted.includes(newEnd),'R73 compositor reconstruction failed');
    const restored=optimizedReverted.replace(newDraw,oldDraw).replace(newEnd,oldEnd);
