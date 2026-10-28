@@ -66,6 +66,7 @@ assert.throws(()=>new OLVectorTileBoost({map:badModeMap,backend:{canvas:{width:6
 const emptyMap={...map,getLayerGroup:()=>({getLayers:()=>({getArray:()=>[]})}),render:()=>{}};
 const emptyCanvas={width:64,height:64,style:{display:''}};
 const emptyBoost=new OLVectorTileBoost({map:emptyMap,backend:{canvas:emptyCanvas,gl:{}},stockOlRenderMode:'exclusive'});
+assert.equal(emptyBoost.scene.bridge.pipeline.tileScissorEnabled,true,'Public exclusive mode must enable tile scissor by default');
 assert.throws(()=>emptyBoost.start({renderSync:false}),/vector-tile layers/);
 assert.equal(emptyBoost.failed,true);
 assert.equal(emptyCanvas.style.display,'none','Unsafe exclusive initialization hides the overlay');
