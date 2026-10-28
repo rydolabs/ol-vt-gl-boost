@@ -282,7 +282,7 @@ export class DirectM5SceneBinding {
       const sep=entry.tileKey.indexOf('::');
       if(sep<1)return false;
       const layer=entry.tileKey.slice(0,sep),domain=entry.tileKey.slice(sep+2);
-      if(!/^\\d+\\/-?\\d+\\/-?\\d+$/.test(domain))return false;
+      if(!/^\d+\/-?\d+\/-?\d+$/.test(domain))return false;
       const z=Number(domain.split('/',1)[0]);
       if(zoom===null)zoom=z;
       else if(z!==zoom)return false;
