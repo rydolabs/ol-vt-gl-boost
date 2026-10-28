@@ -51,7 +51,9 @@ export class OLVectorTileBoost {
       this.scene.start({...(options||{}),renderSync:false});
       const layers=[...this.scene.layers.values()].map(state=>state.layer);
       this.exclusiveHost=new OlExclusiveVectorTileRenderHost({
-        map:this.map,layers,onError:error=>this._failClosed({error,phase:'exclusive-renderer'})});
+        map:this.map,layers,
+        getLayers:()=>[...this.scene.layers.values()].map(state=>state.layer),
+        onError:error=>this._failClosed({error,phase:'exclusive-renderer'})});
       this.exclusiveHost.start();
       if(options?.renderSync!==false)this.map.renderSync?.();
       return this;
