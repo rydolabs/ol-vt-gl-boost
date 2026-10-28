@@ -10,9 +10,9 @@
  * original methods before re-enabling OL rendering.
  */
 export class OlExclusiveVectorTileRenderHost {
-  constructor({map,layers,onError=null}={}){
+  constructor({map,layers,getLayers=null,onError=null}={}){
     if(!map||!Array.isArray(layers)||!layers.length)throw Error('R73 requires map and vector-tile layers');
-    this.map=map;this.layers=layers;this.onError=onError;
+    this.map=map;this.layers=layers;this.getLayers=getLayers;this.onError=onError;
     this.active=false;this.originals=new Map();this.disposer=null;
     this.tileRequests=0;this.suppressedDraws=0;this._primed=new WeakMap();
     this._frame=e=>{try{this.prime(e?.frameState);}catch(error){this.stop();this.onError?.(error);}};
@@ -56,6 +56,14 @@ export class OlExclusiveVectorTileRenderHost {
   }
   prime(frameState){
     if(!this.active)return 0;
+    // The host cannot silently leave newly added stock WebGL layers drawing
+    // under Boost. Fail closed and restore the original OL renderer instead.
+    if(this.getLayers){
+      const current=this.getLayers();
+      if(!Array.isArray(current)||current.length!==this.layers.length||
+        current.some((layer,i)=>layer!==this.layers[i]))
+        throw Error('R73 OL layer tree changed during exclusive GPU ownership');
+    }
     const view=this.map.getView?.(),projection=frameState?.viewState?.projection||view?.getProjection?.();
     const resolution=Number(frameState?.viewState?.resolution??view?.getResolution?.());
     const size=frameState?.size||this.map.getSize?.();
