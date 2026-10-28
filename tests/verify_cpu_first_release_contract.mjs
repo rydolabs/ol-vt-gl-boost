@@ -43,7 +43,7 @@ const hashedGitBlob=(path)=>{
    assert(current.includes(newDraw)&&current.includes(newEnd),'Unexpected R73 GL compositor patch');
    const restored=current.replace(newDraw,oldDraw).replace(newEnd,oldEnd);
    const content=Buffer.from(restored,'utf8');
-   return createHash('sha1').update('blob '+content.length+'\\0').update(content).digest('hex');
+   return createHash('sha1').update('blob '+content.length+'\0').update(content).digest('hex');
  }
  const content=bytes(path);
  return createHash('sha1').update('blob '+content.length+'\0').update(content).digest('hex');
