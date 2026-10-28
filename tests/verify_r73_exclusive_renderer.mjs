@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {OlExclusiveVectorTileRenderHost} from '../src/ol/OlExclusiveVectorTileRenderHost.js';
-import {OLVectorTileBoost} from '../src/index.js';
+import {OLVectorTileBoost,DirectM5SceneBinding} from '../src/index.js';
 const handlers=new Map(),events=[];
 const projection={getCode:()=> 'R73'};
 const view={getProjection:()=>projection,getResolution:()=>64,calculateExtent:()=>[0,0,128,128]};
@@ -70,4 +70,21 @@ assert.throws(()=>emptyBoost.start({renderSync:false}),/vector-tile layers/);
 assert.equal(emptyBoost.failed,true);
 assert.equal(emptyCanvas.style.display,'none','Unsafe exclusive initialization hides the overlay');
 assert.equal(emptyBoost.started,false,'Unsafe exclusive initialization stops optimized scene');
+
+const candidate={vectorTileOptions:{isolatedTileFboFastPath:true,olLayerFboComposition:true},
+  bridge:{pipeline:{tileScissorEnabled:true}},layers:new Map([['one',{}],['two',{}]])};
+const entry=(layer,coord,offset=0)=>({tileKey:layer+'::'+coord,worldOffsetX:offset});
+const disjoint=[entry('a','0/0/0'),entry('a','0/0/0'),entry('b','0/1/0')];
+const frame={viewState:{rotation:0}};
+const safe=DirectM5SceneBinding.prototype.canSkipDisjointLayerFbo;
+assert.equal(safe.call(candidate,disjoint,frame),true,'Disjoint scissored tile domains can safely bypass FBO');
+assert.equal(safe.call(candidate,[entry('a','0/0/0'),entry('b','0/0/0')],frame),false,'Overlapping layer domains MUST retain FBO');
+assert.equal(safe.call(candidate,[entry('a','0/0/0'),entry('b','1/1/0')],frame),false,'Mixed zooms MUST retain FBO');
+assert.equal(safe.call(candidate,[entry('a','0/0/0'),entry('b','0/1/0',100)],frame),false,'Wrapped worlds MUST retain FBO');
+assert.equal(safe.call(candidate,disjoint,{viewState:{rotation:0.3}}),false,'Rotation MUST retain FBO');
+candidate.bridge.pipeline.tileScissorEnabled=false;
+assert.equal(safe.call(candidate,disjoint,frame),false,'Missing tile scissor MUST retain FBO');
+candidate.bridge.pipeline.tileScissorEnabled=true;
+candidate.vectorTileOptions.isolatedTileFboFastPath=false;
+assert.equal(safe.call(candidate,disjoint,frame),false,'Fast path must remain opt-in');
 console.log('R73_EXCLUSIVE_OL_RENDERER_CONTRACT_PASS: tile priming, suppressed GPU, exact method restoration, fail-closed');
