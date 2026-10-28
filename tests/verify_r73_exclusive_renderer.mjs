@@ -42,6 +42,9 @@ const sparseHost=new OlExclusiveVectorTileRenderHost({map,layers:[sparseLayer]})
 sparseHost.start();
 assert.equal(sparseHost.prime(),1);
 assert.deepEqual(sparseTiles,[[0,1,0]]);
+handlers.get('change:size')();
+assert.equal(sparseHost.snapshot().tileRequests,2);
+assert.equal(sparseTiles.length,2);
 sparseHost.stop();
 const unsafe=Object.create(prototype);unsafe.getSource=()=>source;unsafe.render=()=>42;
 assert.throws(()=>new OlExclusiveVectorTileRenderHost({map,layers:[unsafe]}).start(),/cannot safely intercept/);
