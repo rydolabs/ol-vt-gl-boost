@@ -275,7 +275,15 @@ export class DirectM5SceneBinding {
     if(this.vectorTileOptions.isolatedTileFboFastPath!==true||
        this.vectorTileOptions.olLayerFboComposition!==true||
        this.bridge.pipeline.tileScissorEnabled!==true||this.layers.size<2||
-       !schedule?.length||Math.abs(Number(frameState?.viewState?.rotation??0))>1e-12)return false;
+       !schedule?.length||Math.abs(Number(frameState?.viewState?.rotation??0))>1e-12||
+       this.vectorTileOptions.coordinateTransform)return false;
+    // Equal z/x/y strings only imply spatially disjoint rectangles when every
+    // OL vector tile source uses the very same tile grid and projection.
+    const states=[...this.layers.values()];
+    const grid=states[0]?.source?.getTileGrid?.();
+    const projection=states[0]?.source?.getProjection?.()??null;
+    if(!grid||states.some(state=>state.source?.getTileGrid?.()!==grid||
+      (state.source?.getProjection?.()??null)!==projection))return false;
     const domains=new Map();let zoom=null;
     for(const entry of schedule){
       if(entry.worldOffsetX!==0||typeof entry.tileKey!=='string')return false;
