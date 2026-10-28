@@ -64,11 +64,17 @@ export class OlExclusiveVectorTileRenderHost {
       const range=grid.getTileRangeForExtentAndZ(extent,z);
       if(!range)continue;
       const full=grid.getFullTileRange?.(z);
+      // A VectorTileSource can cover a large viewport while its URL function
+      // only supplies a sparse subset of tiles. Avoid constructing empty OL
+      // render tiles (and calling getSourceTiles) for coordinates without data.
+      // The same URL function is used by OL's own source tile loading path.
+      const tileUrl=source.getTileUrlFunction?.();
       for(let x=range.minX;x<=range.maxX;x++)for(let y=range.minY;y<=range.maxY;y++){
         if(full&&(y<full.minY||y>full.maxY))continue;
         if(full&&(x<full.minX||x>full.maxX)&&!source.getWrapX?.())continue;
         const coord=source.getTileCoordForTileUrlFunction?.([z,x,y],projection)||[z,x,y];
         if(!coord)continue;
+        if(tileUrl&&tileUrl(coord,1,projection)===undefined)continue;
         const renderTile=source.getTile(coord[0],coord[1],coord[2],1,projection);
         const tiles=source.getSourceTiles(resolution,projection,renderTile);
         if(!Array.isArray(tiles))throw Error('R73 source tile loader contract changed');
