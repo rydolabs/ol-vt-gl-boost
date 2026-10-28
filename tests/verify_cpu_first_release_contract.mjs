@@ -13,6 +13,10 @@ const legacy=JSON.parse(text('docs/REFACTOR_PROVENANCE.json'));
 const original=JSON.parse(text('docs/SOURCE_PROVENANCE.json'));
 const r67=JSON.parse(text('docs/R67_PROVENANCE.json'));
 const r68=JSON.parse(text('docs/R68_PROVENANCE.json'));
+const r73=JSON.parse(text('docs/R73_PROVENANCE.json'));
+assert.equal(r73.workerDefault,'off');assert.equal(r73.optIn,true);
+const blobSha=path=>{const content=bytes(path);return createHash('sha1').update('blob '+content.length+'\0').update(content).digest('hex');};
+for(const pin of [r73.changedFacade,r73.newHost])assert.equal(blobSha(pin.path),pin.gitBlobSha1,pin.path);
 assert.equal(legacy.workerDefault,'off');
 assert.equal(r67.workerDefault,'off');assert.equal(r68.workerDefault,'off');
 assert.equal(legacy.fileMapping.length,62);
@@ -21,6 +25,7 @@ assert.equal(r68.priorSourceExecutableCount,53);assert.equal(r68.newSourceExecut
 const previous=new Map(r67.changedBlobs.map(x=>[x.path,x.gitBlobSha1]));
 const changed=new Map(r68.changedBlobs.map(x=>[x.path,x.gitBlobSha1]));
 const hashedGitBlob=(path)=>{
+ if(path===r73.changedFacade.path)return previous.get(path); // Pin current R73 bytes above; retain prior historical R67 provenance.
  // R73 only appends an opt-in public export. Validate the exact historical
  // R68 bytes after removing that one explicitly allowed additive line.
  if(path==='src/index.js'){
