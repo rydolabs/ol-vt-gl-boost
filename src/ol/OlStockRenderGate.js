@@ -14,7 +14,7 @@ export class OlStockRenderGate {
   constructor({map,scene,onError=null}={}) {
     if(!map||!scene?.layers)throw Error('OlStockRenderGate requires map and active DirectM5SceneBinding');
     this.map=map;this.scene=scene;this.onError=onError;
-    this.active=false;this._saved=new Map();this._requested=new Map();
+    this.active=false;this._saved=new Map();this._requested=new Map();this._lastDemandSignature=null;
     this._listener=null;this._onFrame=event=>{
       if(!this.active||!event?.frameState)return;
       try{this._sync();this._demand(event.frameState);}
@@ -59,6 +59,16 @@ export class OlStockRenderGate {
     }
   }
   _demand(frameState){
+    // When every source revision and all view/tile-grid inputs are identical,
+    // previously requested tile coordinates are already covered. Avoid running
+    // per-layer 8x4 grid enumeration again on every OL postrender.
+    const extent=frameState?.extent,view=frameState?.viewState;
+    const sourceVersions=[...this.scene.layers.values()].map(s=>
+      String(s.key)+':'+String(s.source?.getRevision?.()??'')+':'+String(s.state?.visible!==false));
+    const signature=JSON.stringify([extent,frameState?.size,frameState?.pixelRatio,
+      view?.resolution,view?.rotation,view?.projection?.getCode?.(),sourceVersions]);
+    if(signature===this._lastDemandSignature){this.stats.skipped++;return;}
+    this._lastDemandSignature=signature;
     const projection=frameState?.viewState?.projection??this.map.getView?.()?.getProjection?.();
     const pixelRatio=Number(frameState?.pixelRatio??1);
     if(!projection||!Number.isFinite(pixelRatio)||pixelRatio<=0)return;
@@ -102,7 +112,8 @@ export class OlStockRenderGate {
     const view=this.map.getView?.(),canvas=this.scene.canvasHost?.canvas??this.scene.canvas;
     const ratio=Number(globalThis.devicePixelRatio??1);
     const pixelRatio=Number.isFinite(ratio)&&ratio>0?ratio:1;
-    const size=this.map.getSize?.()??(canvas?[
+    const mapSize=this.map.getSize?.();
+    const size=(Array.isArray(mapSize)&&mapSize.every(v=>Number.isFinite(v)&&v>0)?mapSize:null)??(canvas?[
       Number(canvas.clientWidth||canvas.width/pixelRatio),
       Number(canvas.clientHeight||canvas.height/pixelRatio)
     ]:null);
@@ -131,7 +142,7 @@ export class OlStockRenderGate {
     else this._listener?.unlisten?.();
     this._listener=null;
     for(const [layer,record] of this._saved)this._restore(layer,record);
-    this._saved.clear();this._requested.clear();
+    this._saved.clear();this._requested.clear();this._lastDemandSignature=null;
     return this;
   }
   snapshot(){
