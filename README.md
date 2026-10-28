@@ -46,7 +46,7 @@ The API is **not a package release or production replacement**. The application 
 
 R72 physical RTX testing isolated the former performance problem: hiding the stock OL WebGL layers with CSS did **not** stop their GPU work. The new opt-in `stockOlRenderMode:'exclusive'` on the `OLVectorTileBoost` façade drives OL source tile requests without doing duplicate stock WebGL drawing. On failure it restores stock rendering and hides the Boost canvas. Default mode is still `normal`; Worker remains OFF.
 
-This mode is **not production-approved**: it uses a reversible per-layer OL10.10.0-specific `render()` interception. A release requires the physical RTX 12/12 raw pixel/tile oracle, real OL fallback, Ubuntu/Windows CI, and >=50% lower first-complete-frame time versus stock OL at 8, 16 and 32 distinct sources on the exact merged SHA. See [R73 design and limits](docs/R73_EXCLUSIVE_RENDERER.md).
+The exclusive mode also uses a guarded, opt-out `isolatedTileFboFastPath` when scissor-clipped source tile domains do not overlap; any overlap, rotation, wrapping, mixed zooms or disabled scissor keeps the original FBO compositor. This mode is **not production-approved**: it uses a reversible per-layer OL10.10.0-specific `render()` interception. A release requires the physical RTX 12/12 raw pixel/tile oracle, real OL fallback, Ubuntu/Windows CI, and >=50% lower first-complete-frame time versus stock OL at 8, 16 and 32 distinct sources on the exact merged SHA. See [R73 design and limits](docs/R73_EXCLUSIVE_RENDERER.md).
 
 ## Usage example — stock OpenLayers vs OL VT GL Boost
 
