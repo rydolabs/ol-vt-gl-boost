@@ -40,8 +40,15 @@ const hashedGitBlob=(path)=>{
    const newDraw='      b.drawArrays(gl.TRIANGLE_STRIP,0,4);\\n'.replaceAll('\\n','\n');
    const oldEnd='    flush(group);\\n    gl.bindFramebuffer(gl.FRAMEBUFFER,null);\\n    b.invalidateStateCache();'.replaceAll('\\n','\n');
    const newEnd='    flush(group);\\n    // Check errors after all layer passes rather than synchronizing the driver\\n    // once per layer. The same GL error gate remains mandatory.\\n    const err=gl.getError();if(err!==gl.NO_ERROR)throw Error("RGBA8 layer composition GL error "+err);\\n    gl.bindFramebuffer(gl.FRAMEBUFFER,null);\\n    b.invalidateStateCache();'.replaceAll('\\n','\n');
-   assert(current.includes(newDraw)&&current.includes(newEnd),'Unexpected R73 GL compositor patch');
-   const restored=current.replace(newDraw,oldDraw).replace(newEnd,oldEnd);
+   // The endFrame optimization eliminates the extra gl.getError sync and
+   // reuses the backend's mandatory end-of-frame error gate instead.
+   const endFrameOld="    this.lastFrameStats=this.backend.endFrame();this.frames++;\\n".replaceAll('\\n','\n');
+   const endFrameNew="    this.lastFrameStats=this.backend.endFrame();this.frames++;\\n    if(this.lastFrameStats?.glError)throw Error('RGBA8 layer composition GL error '+this.lastFrameStats.glError);\\n".replaceAll('\\n','\n');
+   const compositorNew="    flush(group);\\n    // Backend.endFrame performs the single required GL error query after\\n    // all compositor passes and GPU completion, without a duplicate sync.\\n    gl.bindFramebuffer(gl.FRAMEBUFFER,null);\\n    b.invalidateStateCache();".replaceAll('\\n','\n');
+   assert(current.includes(newDraw)&&current.includes(compositorNew)&&current.includes(endFrameNew),'Unexpected R73 GL compositor patch');
+   const optimizedReverted=current.replace(compositorNew,newEnd).replace(endFrameNew,endFrameOld);
+   assert(optimizedReverted.includes(newEnd),'R73 compositor reconstruction failed');
+   const restored=optimizedReverted.replace(newDraw,oldDraw).replace(newEnd,oldEnd);
    const content=Buffer.from(restored,'utf8');
    return createHash('sha1').update('blob '+content.length+'\0').update(content).digest('hex');
  }
