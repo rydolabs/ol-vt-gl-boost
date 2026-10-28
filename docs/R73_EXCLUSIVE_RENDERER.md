@@ -40,7 +40,7 @@ Keep one opt-in `OlExclusiveVectorTileRenderHost` and one public façade `OLVect
 
 ## Post-merge R74 code hygiene assessment
 
-- The `main` tree at `77e54acc7ab41e44db25d3380d1996e1a7caa0ea` contains 115 tracked files, including 49 JS/MJS files under `src/` and 4 files under `vendor/`. The R68/R69 structural reduction and locked npm restoration remain intact.
+- The `main` tree at `77e54acc7ab41e44db25d3380d1996e1a7caa0ea` contains 115 tracked files, including 50 JS/MJS files under `src/` and 4 files under `vendor/`. The R68/R69 structural reduction and locked npm restoration remain intact.
 - **Do not delete** the legacy compatibility path, OL layer/source instances, per-layer FBO fallback or optional Worker code just to reduce file count: they preserve rollback, mixed-layer composition, and opt-in compatibility contracts. They are not proven dead code.
 - No duplicate experimental R72 `manual-tiles` monkeypatch is included in production source; R73 exposes one `OlExclusiveVectorTileRenderHost` through `OLVectorTileBoost`.
 - Remaining performance work must be measured separately: host/map startup allocation, source-tile priming across viewport changes, pan/zoom tail latency, sustained FPS, GPU memory/texture reuse, and context-loss recovery. The measured R73 first-frame target is already met; avoid changing the runtime without new exact-SHA RTX performance and 12+9 correctness evidence.
