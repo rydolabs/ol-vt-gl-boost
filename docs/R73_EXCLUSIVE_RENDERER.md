@@ -22,6 +22,10 @@ map.render();
 
 The host owns the overlay canvas stacking, visibility, map target, disposal and application-level rollback. `boost.stop()` restores original stock OL layer methods **before** the next stock render; if the exclusive renderer fails, the façade stops it, hides the overlay and requests stock OL redraw. An unexpected layer tree change is treated as an error requiring stock fallback. The default `stockOlRenderMode:'normal'` is backward compatible.
 
+## Guarded isolated-tile compositor shortcut
+
+Exclusive mode opts into `isolatedTileFboFastPath:true`, which bypasses the per-layer RGBA8 FBO **only** when the scene has scissor clipping enabled, all rendered source tile domains are distinct across different OL layers, every tile uses the same zoom, world-offset wrapping is zero, and view rotation is zero. In every other case it retains OL-style per-layer FBO composition. Callers can explicitly disable this optimization with `vectorTileOptions:{isolatedTileFboFastPath:false}`. GL errors remain mandatory. R71 physical RTX screenshots confirmed zero changed pixels for the disjoint 8/16/32-source DPR1 fixtures; R73 must independently validate DPR1/2 across 12 cases before release.
+
 ## Boundaries and release gates
 - **Experimental, opt-in only.** The per-instance `layer.render` interception is not an OpenLayers guaranteed stable public extension point. Pin `ol@10.10.0`. Do not change OL prototypes, vendored files, geometry encoding, shaders or the Worker-OFF default to improve benchmark scores.
 - **Measured first complete frame, not FPS.** The R72 synthetic test-only interception achieved 50.54%, 57.51%, 67.21% less first-complete-frame latency versus OL10.10.0 at 8/16/32 genuinely distinct PBF sources. The R73 real host must independently meet the same >=50% per scene.
