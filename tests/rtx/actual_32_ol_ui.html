@@ -13,6 +13,7 @@ import VectorTileSource from '../../vendor/openlayers-10.10.0-runtime/node_modul
 import WebGLVectorTileLayer from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/layer/WebGLVectorTile.js';
 import {WebGL1Backend} from '../../src/gl/backend.js';
 import {OpenLayersRendererBinding} from '../../src/compat/OpenLayersRendererBinding.js';
+import {OlStockRenderGate} from '../../src/ol/OlStockRenderGate.js';
 const info={ready:false,errors:[],frames:0,sourceLoads:0,sourceErrors:0};globalThis.__r53=info;
 const output=t=>document.getElementById('log').textContent=t;
 addEventListener('error',e=>{info.errors.push(String(e.message||e.error));output(info.errors.at(-1))});
@@ -60,6 +61,8 @@ try{
   vectorTileOptions:{drawMode:'style-pass',stableStyleIdentityCache:true,olLayerFboComposition:true,closedLineJoins:true,polygonInsideSegmentFastPath:true,polygonEarBBoxPrecheck:true},
   onError:d=>info.errors.push(String(d.error||d))});
  binding.bridge.pipeline.tileScissorEnabled=true;binding.start({renderSync:false});
+ const gate=new OlStockRenderGate({map,scene:binding,onError:({error})=>info.errors.push(String(error))}).start();
+ globalThis.__r73Gate=gate;
  map.setTarget(document.getElementById('olmap'));
  let lastFrame=null;
  map.on('postrender',e=>{info.frames++;lastFrame=e.frameState});
@@ -71,7 +74,7 @@ try{
    layerStates:binding.snapshot().layers,frameStats:binding.lastFrameStats,
    activeKeys:[...binding.layers.values()].map(x=>[...x.pruner.lastActive]),
    tilePackets:[...binding.bridge.tiles.entries()].map(([k,v])=>({key:k,packetCount:v.packets.length})),
-   frameExtent:lastFrame?.extent,frameSize:lastFrame?.size,errors:[...info.errors]};
+   frameExtent:lastFrame?.extent,frameSize:lastFrame?.size,gate:gate.snapshot(),errors:[...info.errors]};
   if(lastFrame){
    try{
     const stats=binding.renderFrame(lastFrame),gl=backend.gl,bytes=new Uint8Array(512*512*4);
