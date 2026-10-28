@@ -37,7 +37,7 @@
 <h1>OpenLayers 10.10.0 vs OL VT GL Boost</h1>
 <p class="note">Both panels use the same <strong>locally downloaded, distinct MVT tiles</strong>,
 styles, projection and <strong>shared View</strong>. Drag or wheel over either panel.
-The right panel uses the CPU-first WebGL1 scene with <strong>Worker OFF</strong>.
+The right panel uses the CPU-first WebGL1 scene with <strong>Worker OFF</strong> and a reversible single-active-renderer gate (no duplicate stock OL drawing).
 This interactive demonstration is <strong>not a performance benchmark</strong>; two
 maps render simultaneously, which changes GPU and CPU load.</p>
 <div class="scroll"><div class="maps">
@@ -63,7 +63,7 @@ import TileGrid from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/ti
 import MVT from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/format/MVT.js';
 import VectorTileSource from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/source/VectorTile.js';
 import WebGLVectorTileLayer from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/layer/WebGLVectorTile.js';
-import {DirectM5SceneBinding, WebGL1Backend} from '../../src/index.js';
+import {DirectM5SceneBinding, WebGL1Backend, OlStockRenderGate} from '../../src/index.js';
 
 const statusElement=document.getElementById('status');
 const fallbackButton=document.getElementById('fallback');
@@ -74,7 +74,7 @@ const publish=()=>{statusElement.textContent=JSON.stringify(report,null,2);};
 const fail=(error)=>{report.errors.push(String(error?.stack||error));publish();};
 addEventListener('error',event=>fail(event.error||event.message));
 addEventListener('unhandledrejection',event=>fail(event.reason));
-let binding=null;
+let binding=null,gate=null,fallback=null;
 try{
   // Fixture generation is intentionally a separate explicit command.
   const response=await fetch('/tests/fixtures/r46-data/manifest.json');
@@ -136,10 +136,11 @@ try{
       polygonInsideSegmentFastPath:true,polygonEarBBoxPrecheck:true
     },
     // Do NOT enable deferredWorker. A missing opt-in means Worker OFF.
-    onError:({error})=>fail(error)
+    onError:({error})=>{fail(error);try{fallback?.()}catch(e){fail(e)}}
   });
   binding.bridge.pipeline.tileScissorEnabled=true;
   binding.start({renderSync:false});
+  gate=new OlStockRenderGate({map:boostMap,scene:binding,onError:({error})=>{fail(error);fallback?.()}}).start();
   boostMap.setTarget(document.getElementById('boost-map'));
   report.workerDefaultOff=binding.deferredWorker===null;
   if(!report.workerDefaultOff)throw Error('Worker default OFF invariant failed');
@@ -147,9 +148,9 @@ try{
   boostMap.on('postrender',()=>{
     report.boostFrames++;if(report.boostFrames%30===0)publish();
   });
-  const fallback=()=>{
+  fallback=()=>{
     if(report.fallback)return;
-    binding.stop();
+    gate?.stop();binding.stop();
     document.getElementById('boost-viewport').classList.remove('boost-active');
     canvas.style.display='none';
     report.fallback=true;
@@ -162,7 +163,7 @@ try{
   report.ready=true;fallbackButton.disabled=false;publish();
   stockMap.renderSync();boostMap.renderSync();
 }catch(error){
-  try{binding?.stop();}catch(stopError){fail(stopError);}
+  try{gate?.stop();binding?.stop();}catch(stopError){fail(stopError);}
   document.getElementById('boost-viewport').classList.remove('boost-active');
   document.getElementById('boost-canvas').style.display='none';
   fail(error);
