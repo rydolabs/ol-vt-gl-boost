@@ -126,13 +126,13 @@ try{
   // Use the R65-validated target=null -> scene.start() -> setTarget() sequence.
   const boostMap=new OLMap({target:null,layers:optimized.layers,view,controls:[]});
   const canvas=document.getElementById('boost-canvas');
-  const backend=new WebGL1Backend(canvas,{contextAntialias:false,gpuCompletionMode:'blocking',cacheBindings:true});
+  const backend=new WebGL1Backend(canvas,{contextAntialias:false,gpuCompletionMode:'submit',cacheBindings:true});
   binding=new DirectM5SceneBinding({
     map:boostMap,backend,canvas,
     layerStyleResolver:layer=>optimized.styles.get(layer),
     vectorTileOptions:{
       drawMode:'style-pass',stableStyleIdentityCache:true,
-      olLayerFboComposition:true,closedLineJoins:true,
+      olLayerFboComposition:true,isolatedTileFboFastPath:true,closedLineJoins:true,
       polygonInsideSegmentFastPath:true,polygonEarBBoxPrecheck:true
     },
     // Do NOT enable deferredWorker. A missing opt-in means Worker OFF.
