@@ -32,7 +32,10 @@ export class OLVectorTileBoost {
       this._onError?.({error,phase});
     };
     this.scene=new DirectM5SceneBinding({map,backend:this.backend,canvas:this.canvas,resourceManager,
-      canvasMode,canvasFactory,vectorTileOptions,layerStyleResolver,
+      canvasMode,canvasFactory,
+      vectorTileOptions:stockOlRenderMode==='exclusive'?{
+        ...vectorTileOptions,isolatedTileFboFastPath:vectorTileOptions.isolatedTileFboFastPath!==false
+      }:vectorTileOptions,layerStyleResolver,
       onError:stockOlRenderMode==='exclusive'?failClosed:onError,strictVectorTiles,deferredWorker});
     this._failClosed=failClosed;
   }
