@@ -22,7 +22,7 @@ assert.equal(host.snapshot().suppressedDraws,1);
 assert.equal(host.prime(),4);
 assert.equal(events.filter(x=>x.startsWith('tile:')).length,4);
 handlers.get('postrender')({frameState:{size:[512,512],extent:[0,0,128,128],viewState:{resolution:64,projection}}});
-assert.equal(host.snapshot().tileRequests,8);
+assert.equal(host.snapshot().tileRequests,4);
 host.stop();
 assert.equal(layer.render,original);
 assert.equal(Object.prototype.hasOwnProperty.call(layer,'render'),false);
@@ -32,8 +32,8 @@ assert.equal(host.snapshot().restored,true);
 host.start().stop();
 // Sparse vector tile sources must not instantiate empty render tiles for
 // coordinates that their own OL tile URL function cannot resolve.
-const sparseTiles=[];
-const sparseSource={...source,
+const sparseTiles=[];let revision=1;
+const sparseSource={...source,getRevision:()=>revision,
   getTileUrlFunction:()=>([z,x,y])=>x===1&&y===0?'tile/1/0':undefined,
   getTile:(z,x,y)=>{sparseTiles.push([z,x,y]);return {z,x,y};}};
 const sparseLayer=Object.create(prototype);sparseLayer.getSource=()=>sparseSource;
@@ -42,6 +42,10 @@ const sparseHost=new OlExclusiveVectorTileRenderHost({map,layers:[sparseLayer]})
 sparseHost.start();
 assert.equal(sparseHost.prime(),1);
 assert.deepEqual(sparseTiles,[[0,1,0]]);
+handlers.get('change:size')();
+assert.equal(sparseHost.snapshot().tileRequests,1);
+assert.equal(sparseTiles.length,1);
+revision++;
 handlers.get('change:size')();
 assert.equal(sparseHost.snapshot().tileRequests,2);
 assert.equal(sparseTiles.length,2);
