@@ -38,3 +38,6 @@ jobs:
 
       - name: Validate lockfile-based vendor overlay runtime
         run: npm run test:vendor
+
+      - name: R73 stock renderer gate lifecycle and source demand
+        run: npm run test:r73
