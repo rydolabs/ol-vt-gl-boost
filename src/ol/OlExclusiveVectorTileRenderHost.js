@@ -14,7 +14,7 @@ export class OlExclusiveVectorTileRenderHost {
     if(!map||!Array.isArray(layers)||!layers.length)throw Error('R73 requires map and vector-tile layers');
     this.map=map;this.layers=layers;this.onError=onError;
     this.active=false;this.originals=new Map();this.disposer=null;
-    this.tileRequests=0;this.suppressedDraws=0;
+    this.tileRequests=0;this.suppressedDraws=0;this._primed=new WeakMap();
     this._frame=e=>{try{this.prime(e?.frameState);}catch(error){this.stop();this.onError?.(error);}};
   }
   _source(layer){
@@ -69,6 +69,12 @@ export class OlExclusiveVectorTileRenderHost {
       const z=grid.getZForResolution(resolution,source.zDirection??0);
       const range=grid.getTileRangeForExtentAndZ(extent,z);
       if(!range)continue;
+      // A postrender callback may fire repeatedly for one unchanged viewport.
+      // OL retains requested source tiles; avoid re-traversing the same grid
+      // until its source revision or visible tile range actually changes.
+      const signature=[z,range.minX,range.maxX,range.minY,range.maxY,
+        projection.getCode?.()??'',source.getRevision?.()??'',source.getKey?.()??''].join('|');
+      if(this._primed.get(source)===signature)continue;
       const full=grid.getFullTileRange?.(z);
       // A VectorTileSource can cover a large viewport while its URL function
       // only supplies a sparse subset of tiles. Avoid constructing empty OL
@@ -86,6 +92,7 @@ export class OlExclusiveVectorTileRenderHost {
         if(!Array.isArray(tiles))throw Error('R73 source tile loader contract changed');
         requested+=tiles.length;
       }
+      this._primed.set(source,signature);
     }
     this.tileRequests+=requested;
     return requested;
@@ -97,7 +104,7 @@ export class OlExclusiveVectorTileRenderHost {
       if(Object.prototype.hasOwnProperty.call(layer,'render'))delete layer.render;
       if(layer.render!==original)layer.render=original;
     }
-    this.originals.clear();
+    this.originals.clear();this._primed=new WeakMap();
     return this;
   }
   snapshot(){return {active:this.active,tileRequests:this.tileRequests,suppressedDraws:this.suppressedDraws,restored:this.originals.size===0};}
