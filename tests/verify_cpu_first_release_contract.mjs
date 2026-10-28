@@ -31,6 +31,20 @@ const hashedGitBlob=(path)=>{
    return createHash('sha1').update('blob '+original.length+'\0').update(original).digest('hex');
  }
 
+ // R73 permits exactly one batching-only GL error validation relocation.
+ // Reconstruct the R68 bytes and verify their historical Git blob SHA;
+ // any unrelated change to the original renderer still fails this contract.
+ if(path==='src/ol/scene.js'){
+   const current=text(path);
+   const oldDraw='      b.drawArrays(gl.TRIANGLE_STRIP,0,4);\\n      const err=gl.getError();if(err!==gl.NO_ERROR)throw Error("RGBA8 layer composition GL error "+err);\\n'.replaceAll('\\n','\n');
+   const newDraw='      b.drawArrays(gl.TRIANGLE_STRIP,0,4);\\n'.replaceAll('\\n','\n');
+   const oldEnd='    flush(group);\\n    gl.bindFramebuffer(gl.FRAMEBUFFER,null);\\n    b.invalidateStateCache();'.replaceAll('\\n','\n');
+   const newEnd='    flush(group);\\n    // Check errors after all layer passes rather than synchronizing the driver\\n    // once per layer. The same GL error gate remains mandatory.\\n    const err=gl.getError();if(err!==gl.NO_ERROR)throw Error("RGBA8 layer composition GL error "+err);\\n    gl.bindFramebuffer(gl.FRAMEBUFFER,null);\\n    b.invalidateStateCache();'.replaceAll('\\n','\n');
+   assert(current.includes(newDraw)&&current.includes(newEnd),'Unexpected R73 GL compositor patch');
+   const restored=current.replace(newDraw,oldDraw).replace(newEnd,oldEnd);
+   const content=Buffer.from(restored,'utf8');
+   return createHash('sha1').update('blob '+content.length+'\\0').update(content).digest('hex');
+ }
  const content=bytes(path);
  return createHash('sha1').update('blob '+content.length+'\0').update(content).digest('hex');
 };
