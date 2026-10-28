@@ -13,6 +13,9 @@ const legacy=JSON.parse(text('docs/REFACTOR_PROVENANCE.json'));
 const original=JSON.parse(text('docs/SOURCE_PROVENANCE.json'));
 const r67=JSON.parse(text('docs/R67_PROVENANCE.json'));
 const r68=JSON.parse(text('docs/R68_PROVENANCE.json'));
+const r73=JSON.parse(text('docs/R73_PROVENANCE.json'));
+const override=new Map([...r73.priorChangedBlobOverrides,...r73.newFiles].map(x=>[x.path,x.gitBlobSha1]));
+assert.equal(r73.workerDefault,'off');assert.equal(r73.newSourceExecutableCount,50);
 assert.equal(legacy.workerDefault,'off');
 assert.equal(r67.workerDefault,'off');assert.equal(r68.workerDefault,'off');
 assert.equal(legacy.fileMapping.length,62);
@@ -29,16 +32,18 @@ for(const row of legacy.fileMapping){
  const mapped67=r67.legacyPathRedirects[row.new]??row.new;
  const mapped68=r68.redirects[mapped67]??mapped67;
  assert(existsSync(mapped68),mapped68+' missing from R68 layout');
- if(changed.has(mapped68))assert.equal(hashedGitBlob(mapped68),changed.get(mapped68),mapped68);
+ if(override.has(mapped68))assert.equal(hashedGitBlob(mapped68),override.get(mapped68),mapped68);
+ else if(changed.has(mapped68))assert.equal(hashedGitBlob(mapped68),changed.get(mapped68),mapped68);
  else if(previous.has(mapped68))assert.equal(hashedGitBlob(mapped68),previous.get(mapped68),mapped68);
  else assert.equal(createHash('sha256').update(bytes(mapped68)).digest('hex'),row.newSha256,row.new);
 }
 for(const [path,sha] of previous){
  const dst=r68.redirects[path]??path;
- if(changed.has(dst))continue;
+ if(changed.has(dst)||override.has(dst))continue;
  assert.equal(hashedGitBlob(dst),sha,path);
 }
-for(const [path,sha] of changed)assert.equal(hashedGitBlob(path),sha,path);
+for(const [path,sha] of changed)if(!override.has(path))assert.equal(hashedGitBlob(path),sha,path);
+for(const [path,sha] of override)assert.equal(hashedGitBlob(path),sha,path);
 for(const old of [...Object.keys(r67.legacyPathRedirects),...Object.keys(r68.redirects)])
  assert(!existsSync(old),'old module should be deleted: '+old);
-console.log('R68_SOURCE_CONTRACT_PASS',legacy.fileMapping.length,previous.size,changed.size);
+console.log('R73_SOURCE_CONTRACT_PASS',legacy.fileMapping.length,previous.size,changed.size,override.size);
