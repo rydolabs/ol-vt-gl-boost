@@ -30,6 +30,19 @@ assert.equal(layer.render(),'stock-result');
 assert.equal(handlers.size,0);
 assert.equal(host.snapshot().restored,true);
 host.start().stop();
+// Sparse vector tile sources must not instantiate empty render tiles for
+// coordinates that their own OL tile URL function cannot resolve.
+const sparseTiles=[];
+const sparseSource={...source,
+  getTileUrlFunction:()=>([z,x,y])=>x===1&&y===0?'tile/1/0':undefined,
+  getTile:(z,x,y)=>{sparseTiles.push([z,x,y]);return {z,x,y};}};
+const sparseLayer=Object.create(prototype);sparseLayer.getSource=()=>sparseSource;
+sparseLayer.getVisible=()=>true;
+const sparseHost=new OlExclusiveVectorTileRenderHost({map,layers:[sparseLayer]});
+sparseHost.start();
+assert.equal(sparseHost.prime(),1);
+assert.deepEqual(sparseTiles,[[0,1,0]]);
+sparseHost.stop();
 const unsafe=Object.create(prototype);unsafe.getSource=()=>source;unsafe.render=()=>42;
 assert.throws(()=>new OlExclusiveVectorTileRenderHost({map,layers:[unsafe]}).start(),/cannot safely intercept/);
 console.log('R73_EXCLUSIVE_OL_RENDERER_CONTRACT_PASS: tile priming, suppressed GPU, exact method restoration, fail-closed');
