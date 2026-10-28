@@ -1,0 +1,42 @@
+{
+  "schema": "r68-compat-consolidation-v1",
+  "baseCommit": "2df183b7df8c7b54813328431d88913690dbe0d3",
+  "candidateCommit": "695256b86df41967a8014bbbb35fa5b90d2bbad0",
+  "original": "docs/R67_PROVENANCE.json",
+  "workerDefault": "off",
+  "redirects": {
+    "src/compat/core/GeometryStore.js": "src/compat/core/stores.js",
+    "src/compat/core/StyleStore.js": "src/compat/core/stores.js",
+    "src/compat/core/DirtyTracker.js": "src/compat/core/stores.js",
+    "src/compat/core/RenderReferenceStore.js": "src/compat/core/schedule.js",
+    "src/compat/core/RenderSchedule.js": "src/compat/core/schedule.js",
+    "src/compat/core/PackedPathOrder.js": "src/compat/core/RendererKernel.js"
+  },
+  "changedBlobs": [
+    {
+      "path": "src/compat/core/stores.js",
+      "gitBlobSha1": "cc2a91f8a0fa361e450a8de84f262e83e8eda6ad"
+    },
+    {
+      "path": "src/compat/core/schedule.js",
+      "gitBlobSha1": "cc6a10a0824fe9eb948d20cef817e596c2b5e353"
+    },
+    {
+      "path": "src/compat/core/RendererKernel.js",
+      "gitBlobSha1": "9fdeff136ae3ccb7996d75ea4d1942654675d042"
+    },
+    {
+      "path": "src/compat/VectorRenderer.js",
+      "gitBlobSha1": "9bb816ccba2b8468f0da0f7a97cb2bca5dcf9003"
+    },
+    {
+      "path": "src/compat/renderers.js",
+      "gitBlobSha1": "635a357fb7a8daad9194a090c50ee4e2019d6577"
+    }
+  ],
+  "priorSourceExecutableCount": 53,
+  "newSourceExecutableCount": 49,
+  "priorCompatModules": 16,
+  "newCompatModules": 12,
+  "assurance": "R64 original-source SHA256 and R67 immutable changed blob hashes preserved; R68 tree-pinned SHA1 used for changed files"
+}

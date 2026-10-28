@@ -1,4 +1,3 @@
-import {expandPackedPathOrder} from './PackedPathOrder.js';
 /**
  * Platform-neutral renderer orchestration kernel.
  *
@@ -172,4 +171,34 @@ export class RendererKernel {
     this.backend.beginFrame(); const t0=performance.now(); this.prepare(); const rebuildMs=performance.now()-t0; const schedule=this._drawPrepared();
     return { plan:{policy:this.compiler.policy,ordered:this._ordered(),schedule:schedule.map(x=>({key:x.key,zIndex:x.zIndex,sequence:x.sequence,styleZIndex:x.styleZIndex,counts:Object.fromEntries(Object.entries(x.passes||{}).map(([k,v])=>[k,v.length]))}))}, stats:{...this.backend.endFrame(),geometryCompiles:this.geometryStore.size,rebuilds:new Set(this.references.map(r=>r.geometryType)).size,patchedBytes:0,referenceRebuilds:3,referenceUploadBytes:0,rebuildMs} };
   }
+}
+ 
+// R68: expandPackedPathOrder moved here without order/semantics changes.
+/**
+ * An ordered *view*, not a GeometryStore/ReferenceStore resource. Expand a
+ * single-style packed MultiLineString into virtual path draw spans in the exact
+ * same order as the legacy `parts` compiler. Only minimal metadata is copied.
+ *
+ * A per-tile sink's orderSeed resets at zero, so global sorting MUST include
+ * every original path's local order: sorting by the packed feature order alone
+ * reorders overlapping, alpha-blended lines across tiles.
+ */
+export function expandPackedPathOrder(references){
+  if(!(references||[]).some(r=>Array.isArray(r.packedPathInstanceCounts)))return references;
+  const out=[];
+  for(const r of references){
+    const counts=r.packedPathInstanceCounts;
+    if(!Array.isArray(counts)){out.push(r);continue;}
+    let start=0,pointStart=0;
+    for(let i=0;i<counts.length;i++){
+      const count=counts[i];
+      // Zero-length path still participates in ordering, matching legacy PARTS.
+      out.push({...r,id:`${r.id}:ordered-path:${i}`,order:(r.order??0)+i,
+        packedPathIndex:i,packedPathStart:start,packedPathCount:count,
+        packedPathPointStart:pointStart,packedPathPointCount:r.packedPathVertexCounts?.[i]??count+1});
+      start+=count;
+      pointStart+=r.packedPathVertexCounts?.[i]??count+1;
+    }
+  }
+  return out;
 }
