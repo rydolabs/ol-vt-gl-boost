@@ -13,6 +13,7 @@ import VectorTileSource from '../../vendor/openlayers-10.10.0-runtime/node_modul
 import WebGLVectorTileLayer from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/layer/WebGLVectorTile.js';
 import {WebGL1Backend} from '../../src/gl/backend.js';
 import {OpenLayersRendererBinding} from '../../src/compat/OpenLayersRendererBinding.js';
+import {OlStockRenderGate} from '../../src/ol/OlStockRenderGate.js';
 const info={ready:false,errors:[],frames:0,sourceLoads:0,sourceErrors:0};globalThis.__r53=info;
 const recovery={mode:'m5',rollbackCount:0,reason:null,bindingStopped:false,
  workerDefaultOff:null,olFrameAtFallback:null,lastViewBefore:null,lastViewAfter:null};
@@ -63,6 +64,8 @@ try{
   vectorTileOptions:{drawMode:'style-pass',stableStyleIdentityCache:true,olLayerFboComposition:true,closedLineJoins:true,polygonInsideSegmentFastPath:true,polygonEarBBoxPrecheck:true},
   onError:d=>info.errors.push(String(d.error||d))});
  binding.bridge.pipeline.tileScissorEnabled=true;binding.start({renderSync:false});
+ const gate=new OlStockRenderGate({map,scene:binding,onError:({error})=>info.errors.push(String(error))}).start();
+ const originalLayerRenders=layers.map(layer=>Object.getPrototypeOf(layer).render);
  recovery.workerDefaultOff=(binding.deferredWorker===null);
  if(!recovery.workerDefaultOff)throw Error('R63 CPU-first beta default Worker unexpectedly ON');
  globalThis.__r63Fallback=(reason='injected-M5-fault')=>{
@@ -70,8 +73,9 @@ try{
   recovery.reason=reason;
   recovery.lastViewBefore={center:map.getView().getCenter().slice(),resolution:map.getView().getResolution(),rotation:map.getView().getRotation()};
   recovery.olFrameAtFallback=info.frames;
-  binding.stop(); // stop actual M5 scene: tile subscriptions, CPU tile adapter, canvas
+  gate.stop();binding.stop(); // restore OL layer rendering before stock fallback: tile subscriptions, CPU tile adapter, canvas
   recovery.bindingStopped=!binding.started&&binding.layers.size===0;
+  recovery.gateStopped=!gate.active&&layers.every((l,i)=>l.render===originalLayerRenders[i]);
   document.getElementById('m5').style.display='none';
   document.getElementById('olmap').style.left='0px';
   map.renderSync();map.render();
@@ -83,7 +87,7 @@ try{
   ...recovery,ready:info.ready,frames:info.frames,sourceLoads:info.sourceLoads,
   sourceErrors:info.sourceErrors,errors:[...info.errors],
   mapTargetAttached:!!map.getTargetElement(),webglCanvasCount:document.querySelectorAll('#olmap canvas').length,
-  m5Visible:document.getElementById('m5').style.display!=='none',
+  m5Visible:document.getElementById('m5').style.display!=='none',gateActive:gate.active,gateOverrideCount:gate.snapshot().overriddenLayers,gateStats:gate.snapshot(),
   view:{center:map.getView().getCenter(),resolution:map.getView().getResolution(),rotation:map.getView().getRotation()}
  });
  map.setTarget(document.getElementById('olmap'));
