@@ -19,7 +19,7 @@
   "newFiles": [
     {
       "path": "src/ol/OlStockRenderGate.js",
-      "gitBlobSha1": "25bcdf59fcadf74944dd8ef8943f7c9c44f61a61"
+      "gitBlobSha1": "c50a71b6510bd38653ef56637b9c4d74897f5774"
     }
   ],
   "note": "Only host integration and public facade changed; no encoder/shader/worker change. Physical RTX regression and performance gates required for merge."
