@@ -36,5 +36,8 @@ jobs:
       - name: Verify legacy compatibility module consolidation
         run: npm run test:compat
 
+      - name: Verify R73 exclusive renderer and fail-closed facade lifecycle
+        run: npm run test:r73
+
       - name: Validate lockfile-based vendor overlay runtime
         run: npm run test:vendor
