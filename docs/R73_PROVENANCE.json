@@ -7,7 +7,7 @@
   "stockMode": "exclusive",
   "changedFacade": {
     "path": "src/OLVectorTileBoost.js",
-    "gitBlobSha1": "aef083f2a673da5c746484dc7365325aaf69dbe6"
+    "gitBlobSha1": "9022c33c0b2f2c69c6dc9d586780d2b3634dc87a"
   },
   "newHost": {
     "path": "src/ol/OlExclusiveVectorTileRenderHost.js",
@@ -17,7 +17,7 @@
   "sourceCountAfter": 50,
   "performanceGate": ">=50% first complete frame latency reduction relative to OL 10.10.0 for 8, 16, 32 independent MVTs; RTX ABBA all three",
   "correctnessGate": "physical RTX 12/12 RGBA8 and tile ID, stock OL rollback, Ubuntu+Windows regression",
-  "note": "Identical source tile grid and projection, scissor clipping, disjoint tile domains, zero rotation/wrapping/warp, same zoom are mandatory for any opt-in FBO bypass. Worker OFF and RTX correctness gate remain required.",
+  "note": "Exclusive facade enables tile scissor by default (explicit opt-out allowed). FBO bypass additionally requires same grid/projection, disjoint domains, zero rotation/wrapping/coordinate warp. All code blobs pinned, Worker OFF and RTX gates required.",
   "changedScene": {
     "path": "src/ol/scene.js",
     "gitBlobSha1": "584f7e0dd3c0948e89f7370eab1d964cc6eccc8a",
