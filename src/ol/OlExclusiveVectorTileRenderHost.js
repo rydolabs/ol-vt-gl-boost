@@ -43,8 +43,14 @@ export class OlExclusiveVectorTileRenderHost {
         };
       }
       this.active=true;
-      const key=this.map.on?.('postrender',this._frame);
-      this.disposer=()=>{if(typeof this.map.un==='function')this.map.un('postrender',this._frame);else key?.unlisten?.();};
+      // Prime as soon as the map obtains a viewport size, before its first
+      // render pass. This avoids an empty GPU frame while source tiles load.
+      const events=['change:size','postrender'];
+      const keys=events.map(event=>this.map.on?.(event,this._frame));
+      this.disposer=()=>{for(let i=0;i<events.length;i++){
+        if(typeof this.map.un==='function')this.map.un(events[i],this._frame);
+        else keys[i]?.unlisten?.();
+      }};
       return this;
     }catch(error){this.stop();throw error;}
   }
