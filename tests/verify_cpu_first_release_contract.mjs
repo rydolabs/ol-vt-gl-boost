@@ -21,6 +21,16 @@ assert.equal(r68.priorSourceExecutableCount,53);assert.equal(r68.newSourceExecut
 const previous=new Map(r67.changedBlobs.map(x=>[x.path,x.gitBlobSha1]));
 const changed=new Map(r68.changedBlobs.map(x=>[x.path,x.gitBlobSha1]));
 const hashedGitBlob=(path)=>{
+ // R73 only appends an opt-in public export. Validate the exact historical
+ // R68 bytes after removing that one explicitly allowed additive line.
+ if(path==='src/index.js'){
+   const current=text(path);
+   const marker="\nexport {OlExclusiveVectorTileRenderHost} from './ol/OlExclusiveVectorTileRenderHost.js';\n";
+   assert(current.endsWith(marker),'Unexpected src/index.js modifications beyond R73 opt-in export');
+   const original=Buffer.from(current.slice(0,-marker.length),'utf8');
+   return createHash('sha1').update('blob '+original.length+'\0').update(original).digest('hex');
+ }
+
  const content=bytes(path);
  return createHash('sha1').update('blob '+content.length+'\0').update(content).digest('hex');
 };
