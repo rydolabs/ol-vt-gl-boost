@@ -38,6 +38,11 @@ export class OLVectorTileBoost {
       }:vectorTileOptions,layerStyleResolver,
       onError:stockOlRenderMode==='exclusive'?failClosed:onError,strictVectorTiles,deferredWorker});
     this._failClosed=failClosed;
+    // The single-renderer integration owns tile clipping while active.
+    // Clip to each source tile before disjoint-domain FBO eligibility checks.
+    // Explicit opt-out retains the original OL-style compositor.
+    if(stockOlRenderMode==='exclusive'&&vectorTileOptions.tileScissorEnabled!==false)
+      this.scene.bridge.pipeline.tileScissorEnabled=true;
   }
   get started(){return this.scene.started;}
   get workerEnabled(){return this.scene.deferredWorker!==null;}
