@@ -263,6 +263,35 @@ export class DirectM5SceneBinding {
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
     b.invalidateStateCache();
   }
+  /**
+   * Opt-in R73 shortcut for completely disjoint source tile domains.
+   * A scissor-clipped tile cannot contribute a fragment outside its own tile
+   * rectangle. If no two different OL layers draw the same source coordinate,
+   * per-layer FBO compositing cannot change the blend order at a pixel.
+   * Fail closed for wrapped worlds, mixed zooms, rotated frames or malformed
+   * tile keys. Mixed/overlapping scenes always keep the exact OL FBO path.
+   */
+  canSkipDisjointLayerFbo(schedule,frameState){
+    if(this.vectorTileOptions.isolatedTileFboFastPath!==true||
+       this.vectorTileOptions.olLayerFboComposition!==true||
+       this.bridge.pipeline.tileScissorEnabled!==true||this.layers.size<2||
+       !schedule?.length||Math.abs(Number(frameState?.viewState?.rotation??0))>1e-12)return false;
+    const domains=new Map();let zoom=null;
+    for(const entry of schedule){
+      if(entry.worldOffsetX!==0||typeof entry.tileKey!=='string')return false;
+      const sep=entry.tileKey.indexOf('::');
+      if(sep<1)return false;
+      const layer=entry.tileKey.slice(0,sep),domain=entry.tileKey.slice(sep+2);
+      if(!/^\\d+\\/-?\\d+\\/-?\\d+$/.test(domain))return false;
+      const z=Number(domain.split('/',1)[0]);
+      if(zoom===null)zoom=z;
+      else if(z!==zoom)return false;
+      const prior=domains.get(domain);
+      if(prior!==undefined&&prior!==layer)return false;
+      domains.set(domain,layer);
+    }
+    return true;
+  }
   renderFrame(frameState){
     const timed=this.vectorTileOptions.profileCPU===true;
     const canvas=this.canvasHost.canvas;
@@ -276,13 +305,15 @@ export class DirectM5SceneBinding {
     const tDraw=timed?performance.now():0;
     this.backend.beginFrame();
     const neutralFrame=toNeutralFrame(frameState);
-    if(this.vectorTileOptions.olLayerFboComposition===true&&this.layers.size>1){
+    const needsLayerFbo=this.vectorTileOptions.olLayerFboComposition===true&&this.layers.size>1;
+    const bypassLayerFbo=needsLayerFbo&&this.canSkipDisjointLayerFbo(schedule,frameState);
+    if(needsLayerFbo&&!bypassLayerFbo){
       this._renderCompositedLayers(neutralFrame,schedule);
     }else{
       this.bridge.pipeline.draw({frame:neutralFrame,packetSchedule:schedule});
     }
     const tEnd=timed?performance.now():0;
-    this.lastFrameStats=this.backend.endFrame();this.frames++;
+    this.lastFrameStats=this.backend.endFrame();this.lastFrameStats.layerFboBypassed=bypassLayerFbo;this.frames++;
     if(this.lastFrameStats?.glError)throw Error('RGBA8 layer composition GL error '+this.lastFrameStats.glError);
     this.deferredWorker?.afterDraw();
     if(timed){this.lastFrameStats.scheduleMs=tDraw-tSchedule;
