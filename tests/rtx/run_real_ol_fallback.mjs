@@ -36,10 +36,12 @@ try{
  requireThat(/NVIDIA.*RTX 5060 Ti/i.test(init.renderer||''),'physical NVIDIA RTX 5060 Ti');
  const mode0=await page.evaluate(()=>__r63Snapshot());
  requireThat(mode0.workerDefaultOff===true&&mode0.mode==='m5'&&mode0.m5Visible,'Worker OFF is actual M5 default');
+ requireThat(mode0.gateActive===true&&mode0.gateOverrideCount===32,'R73 source-only gate suppresses all 32 stock OL layers');
  // Stock OL is alive while M5 is showing; screenshot after fallback shows OL.
  const fault=await page.evaluate(()=>__r63Fallback('injected-production-render-error'));
  result.snapshots.fault=fault;
  requireThat(fault.mode==='ol'&&fault.rollbackCount===1&&fault.bindingStopped===true&&fault.workerDefaultOff===true,'M5 scene actually stops; OL takes over with Worker OFF');
+ requireThat(fault.gateStopped===true,'R73 gate restores exact stock OL layer render methods at fault');
  requireThat(JSON.stringify(fault.lastViewBefore)===JSON.stringify(fault.lastViewAfter),'fallback preserves OL center/resolution/rotation exactly');
  const after=await page.evaluate(()=>__r63Snapshot());result.snapshots.after=after;
  requireThat(after.mode==='ol'&&!after.m5Visible&&after.mapTargetAttached&&after.webglCanvasCount>0,'stock OpenLayers WebGL canvas is visible at fallback target');
