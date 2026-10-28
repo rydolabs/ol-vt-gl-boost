@@ -9,7 +9,7 @@
   "priorChangedBlobOverrides": [
     {
       "path": "src/OLVectorTileBoost.js",
-      "gitBlobSha1": "d3ce349a09f2e8b8c4a1406162bdf2cd5c6a277b"
+      "gitBlobSha1": "dc4febef59711d823f61218ad3a880144bd4a912"
     },
     {
       "path": "src/index.js",
@@ -19,7 +19,7 @@
   "newFiles": [
     {
       "path": "src/ol/OlStockRenderGate.js",
-      "gitBlobSha1": "c50a71b6510bd38653ef56637b9c4d74897f5774"
+      "gitBlobSha1": "90a883ecb9d1d9ea0ea1ab71ed6debfdcb0b750c"
     }
   ],
   "note": "Only host integration and public facade changed; no encoder/shader/worker change. Physical RTX regression and performance gates required for merge."
