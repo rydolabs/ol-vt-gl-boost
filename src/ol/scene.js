@@ -250,7 +250,6 @@ export class DirectM5SceneBinding {
       gl.activeTexture(gl.TEXTURE0);b.bindTexture(gl.TEXTURE_2D,target.texture);
       b.uniform1i(b.uniform(program,'u_image'),0);
       b.drawArrays(gl.TRIANGLE_STRIP,0,4);
-      const err=gl.getError();if(err!==gl.NO_ERROR)throw Error("RGBA8 layer composition GL error "+err);
     };
     let group=[],priorLayer=null;
     for(const packet of schedule){
@@ -259,8 +258,47 @@ export class DirectM5SceneBinding {
       group.push(packet);priorLayer=layerKey;
     }
     flush(group);
+    // Backend.endFrame performs the single required GL error query after
+    // all compositor passes and GPU completion, without a duplicate sync.
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
     b.invalidateStateCache();
+  }
+  /**
+   * Opt-in R73 shortcut for completely disjoint source tile domains.
+   * A scissor-clipped tile cannot contribute a fragment outside its own tile
+   * rectangle. If no two different OL layers draw the same source coordinate,
+   * per-layer FBO compositing cannot change the blend order at a pixel.
+   * Fail closed for wrapped worlds, mixed zooms, rotated frames or malformed
+   * tile keys. Mixed/overlapping scenes always keep the exact OL FBO path.
+   */
+  canSkipDisjointLayerFbo(schedule,frameState){
+    if(this.vectorTileOptions.isolatedTileFboFastPath!==true||
+       this.vectorTileOptions.olLayerFboComposition!==true||
+       this.bridge.pipeline.tileScissorEnabled!==true||this.layers.size<2||
+       !schedule?.length||Math.abs(Number(frameState?.viewState?.rotation??0))>1e-12||
+       this.vectorTileOptions.coordinateTransform)return false;
+    // Equal z/x/y strings only imply spatially disjoint rectangles when every
+    // OL vector tile source uses the very same tile grid and projection.
+    const states=[...this.layers.values()];
+    const grid=states[0]?.source?.getTileGrid?.();
+    const projection=states[0]?.source?.getProjection?.()??null;
+    if(!grid||states.some(state=>state.source?.getTileGrid?.()!==grid||
+      (state.source?.getProjection?.()??null)!==projection))return false;
+    const domains=new Map();let zoom=null;
+    for(const entry of schedule){
+      if(entry.worldOffsetX!==0||typeof entry.tileKey!=='string')return false;
+      const sep=entry.tileKey.indexOf('::');
+      if(sep<1)return false;
+      const layer=entry.tileKey.slice(0,sep),domain=entry.tileKey.slice(sep+2);
+      if(!/^\d+\/-?\d+\/-?\d+$/.test(domain))return false;
+      const z=Number(domain.split('/',1)[0]);
+      if(zoom===null)zoom=z;
+      else if(z!==zoom)return false;
+      const prior=domains.get(domain);
+      if(prior!==undefined&&prior!==layer)return false;
+      domains.set(domain,layer);
+    }
+    return true;
   }
   renderFrame(frameState){
     const timed=this.vectorTileOptions.profileCPU===true;
@@ -275,13 +313,16 @@ export class DirectM5SceneBinding {
     const tDraw=timed?performance.now():0;
     this.backend.beginFrame();
     const neutralFrame=toNeutralFrame(frameState);
-    if(this.vectorTileOptions.olLayerFboComposition===true&&this.layers.size>1){
+    const needsLayerFbo=this.vectorTileOptions.olLayerFboComposition===true&&this.layers.size>1;
+    const bypassLayerFbo=needsLayerFbo&&this.canSkipDisjointLayerFbo(schedule,frameState);
+    if(needsLayerFbo&&!bypassLayerFbo){
       this._renderCompositedLayers(neutralFrame,schedule);
     }else{
       this.bridge.pipeline.draw({frame:neutralFrame,packetSchedule:schedule});
     }
     const tEnd=timed?performance.now():0;
-    this.lastFrameStats=this.backend.endFrame();this.frames++;
+    this.lastFrameStats=this.backend.endFrame();this.lastFrameStats.layerFboBypassed=bypassLayerFbo;this.frames++;
+    if(this.lastFrameStats?.glError)throw Error('RGBA8 layer composition GL error '+this.lastFrameStats.glError);
     this.deferredWorker?.afterDraw();
     if(timed){this.lastFrameStats.scheduleMs=tDraw-tSchedule;
       this.lastFrameStats.drawSubmitCpuMs=tEnd-tDraw;

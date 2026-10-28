@@ -63,7 +63,7 @@ import TileGrid from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/ti
 import MVT from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/format/MVT.js';
 import VectorTileSource from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/source/VectorTile.js';
 import WebGLVectorTileLayer from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/layer/WebGLVectorTile.js';
-import {DirectM5SceneBinding, WebGL1Backend} from '../../src/index.js';
+import {DirectM5SceneBinding, WebGL1Backend, OlExclusiveVectorTileRenderHost} from '../../src/index.js';
 
 const statusElement=document.getElementById('status');
 const fallbackButton=document.getElementById('fallback');
@@ -74,7 +74,7 @@ const publish=()=>{statusElement.textContent=JSON.stringify(report,null,2);};
 const fail=(error)=>{report.errors.push(String(error?.stack||error));publish();};
 addEventListener('error',event=>fail(event.error||event.message));
 addEventListener('unhandledrejection',event=>fail(event.reason));
-let binding=null;
+let binding=null,exclusive=null;
 try{
   // Fixture generation is intentionally a separate explicit command.
   const response=await fetch('/tests/fixtures/r46-data/manifest.json');
@@ -126,13 +126,13 @@ try{
   // Use the R65-validated target=null -> scene.start() -> setTarget() sequence.
   const boostMap=new OLMap({target:null,layers:optimized.layers,view,controls:[]});
   const canvas=document.getElementById('boost-canvas');
-  const backend=new WebGL1Backend(canvas,{contextAntialias:false,gpuCompletionMode:'blocking',cacheBindings:true});
+  const backend=new WebGL1Backend(canvas,{contextAntialias:false,gpuCompletionMode:'submit',cacheBindings:true});
   binding=new DirectM5SceneBinding({
     map:boostMap,backend,canvas,
     layerStyleResolver:layer=>optimized.styles.get(layer),
     vectorTileOptions:{
       drawMode:'style-pass',stableStyleIdentityCache:true,
-      olLayerFboComposition:true,closedLineJoins:true,
+      olLayerFboComposition:true,isolatedTileFboFastPath:true,closedLineJoins:true,
       polygonInsideSegmentFastPath:true,polygonEarBBoxPrecheck:true
     },
     // Do NOT enable deferredWorker. A missing opt-in means Worker OFF.
@@ -140,6 +140,7 @@ try{
   });
   binding.bridge.pipeline.tileScissorEnabled=true;
   binding.start({renderSync:false});
+  exclusive=new OlExclusiveVectorTileRenderHost({map:boostMap,layers:optimized.layers,onError:fail}).start();
   boostMap.setTarget(document.getElementById('boost-map'));
   report.workerDefaultOff=binding.deferredWorker===null;
   if(!report.workerDefaultOff)throw Error('Worker default OFF invariant failed');
@@ -149,6 +150,7 @@ try{
   });
   const fallback=()=>{
     if(report.fallback)return;
+    exclusive?.stop();
     binding.stop();
     document.getElementById('boost-viewport').classList.remove('boost-active');
     canvas.style.display='none';
@@ -162,7 +164,7 @@ try{
   report.ready=true;fallbackButton.disabled=false;publish();
   stockMap.renderSync();boostMap.renderSync();
 }catch(error){
-  try{binding?.stop();}catch(stopError){fail(stopError);}
+  try{exclusive?.stop();binding?.stop();}catch(stopError){fail(stopError);}
   document.getElementById('boost-viewport').classList.remove('boost-active');
   document.getElementById('boost-canvas').style.display='none';
   fail(error);
