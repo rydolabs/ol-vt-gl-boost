@@ -258,9 +258,8 @@ export class DirectM5SceneBinding {
       group.push(packet);priorLayer=layerKey;
     }
     flush(group);
-    // Check errors after all layer passes rather than synchronizing the driver
-    // once per layer. The same GL error gate remains mandatory.
-    const err=gl.getError();if(err!==gl.NO_ERROR)throw Error("RGBA8 layer composition GL error "+err);
+    // Backend.endFrame performs the single required GL error query after
+    // all compositor passes and GPU completion, without a duplicate sync.
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
     b.invalidateStateCache();
   }
@@ -284,6 +283,7 @@ export class DirectM5SceneBinding {
     }
     const tEnd=timed?performance.now():0;
     this.lastFrameStats=this.backend.endFrame();this.frames++;
+    if(this.lastFrameStats?.glError)throw Error('RGBA8 layer composition GL error '+this.lastFrameStats.glError);
     this.deferredWorker?.afterDraw();
     if(timed){this.lastFrameStats.scheduleMs=tDraw-tSchedule;
       this.lastFrameStats.drawSubmitCpuMs=tEnd-tDraw;
