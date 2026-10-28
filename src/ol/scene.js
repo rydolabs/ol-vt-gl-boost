@@ -250,7 +250,6 @@ export class DirectM5SceneBinding {
       gl.activeTexture(gl.TEXTURE0);b.bindTexture(gl.TEXTURE_2D,target.texture);
       b.uniform1i(b.uniform(program,'u_image'),0);
       b.drawArrays(gl.TRIANGLE_STRIP,0,4);
-      const err=gl.getError();if(err!==gl.NO_ERROR)throw Error("RGBA8 layer composition GL error "+err);
     };
     let group=[],priorLayer=null;
     for(const packet of schedule){
@@ -259,6 +258,9 @@ export class DirectM5SceneBinding {
       group.push(packet);priorLayer=layerKey;
     }
     flush(group);
+    // Check errors after all layer passes rather than synchronizing the driver
+    // once per layer. The same GL error gate remains mandatory.
+    const err=gl.getError();if(err!==gl.NO_ERROR)throw Error("RGBA8 layer composition GL error "+err);
     gl.bindFramebuffer(gl.FRAMEBUFFER,null);
     b.invalidateStateCache();
   }
