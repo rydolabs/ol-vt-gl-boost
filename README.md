@@ -42,6 +42,23 @@ boost.destroy();
 
 The API is **not a package release or production replacement**. The application must manage the overlay, supported layer types and actual stock-OL restoration. Deferred Worker remains **OFF unless explicitly opted in**. The tested legacy `DirectM5SceneBinding` entrypoint remains exported for compatibility. Source structure and verification: [R67 consolidation details](docs/R67_CORE_CONSOLIDATION.md).
 
+## R73 experimental single-active-renderer mode (opt-in)
+
+With regular Boost integration, a visually hidden stock OpenLayers WebGLVectorTileLayer can still do expensive duplicate GPU work. R73 exposes `stockOlRenderMode: 'source-only'`, which suppresses only that stock WebGL layer draw while explicitly driving its tile source, and restores original stock rendering on stop/fault. The fallback OL objects are kept alive; Worker remains OFF. The default mode remains `normal` for existing callers.
+
+```js
+const boost = new OLVectorTileBoost({
+  map, canvas,
+  stockOlRenderMode: 'source-only',
+  layerStyleResolver: layer => styles.get(layer),
+  onError: ({error}) => console.error(error)
+});
+boost.start({renderSync: false});
+// On controlled fallback, call boost.stop(), hide the overlay, and repaint OL.
+```
+
+This is **experimental / production NO-GO**. It uses an isolated, reversible per-instance `layer.render` interception for the pinned OL 10.10.0 runtime, **not** a guaranteed public OL extension point. For the constraints and acceptance tests, see [R73 integration and safety notes](docs/R73_SINGLE_RENDERER.md). R70's slow Boost example was affected by duplicate hidden-OL drawing; R72 isolated RTX tests recovered 50–67% lower first-complete-frame latency when that work was removed. No universal FPS or other-hardware performance claim is implied.
+
 ## Usage example — stock OpenLayers vs OL VT GL Boost
 
 A **runnable side-by-side example** is included: [examples/compare/index.html](examples/compare/index.html). It uses OpenLayers **10.10.0** on the left and the **same OpenLayers Map / View / VectorTileSource APIs** with the direct WebGL1 rendering pipeline on the right.
