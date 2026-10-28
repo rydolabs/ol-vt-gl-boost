@@ -1,0 +1,26 @@
+{
+  "schema": "r73-stock-render-source-only-v1",
+  "baseCommit": "6ebd9eb7fffb66b637e5f7b0b03fb62d7b0dee8b",
+  "prior": "docs/R68_PROVENANCE.json",
+  "workerDefault": "off",
+  "originalOlRuntime": "10.10.0",
+  "newSourceExecutableCount": 50,
+  "optInOnly": true,
+  "priorChangedBlobOverrides": [
+    {
+      "path": "src/OLVectorTileBoost.js",
+      "gitBlobSha1": "d3ce349a09f2e8b8c4a1406162bdf2cd5c6a277b"
+    },
+    {
+      "path": "src/index.js",
+      "gitBlobSha1": "e443b98e22b3e764d5894e68b5b7c6162d4917ce"
+    }
+  ],
+  "newFiles": [
+    {
+      "path": "src/ol/OlStockRenderGate.js",
+      "gitBlobSha1": "25bcdf59fcadf74944dd8ef8943f7c9c44f61a61"
+    }
+  ],
+  "note": "Only host integration and public facade changed; no encoder/shader/worker change. Physical RTX regression and performance gates required for merge."
+}
