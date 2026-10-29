@@ -14,9 +14,15 @@ const original=JSON.parse(text('docs/SOURCE_PROVENANCE.json'));
 const r67=JSON.parse(text('docs/R67_PROVENANCE.json'));
 const r68=JSON.parse(text('docs/R68_PROVENANCE.json'));
 const r73=JSON.parse(text('docs/R73_PROVENANCE.json'));
+const r75=JSON.parse(text('docs/R75_PROVENANCE.json'));
+const r73Fixture=path=>'tests/fixtures/r73-pinned/'+path.replaceAll('/','__')+'.snapshot';
 assert.equal(r73.workerDefault,'off');assert.equal(r73.optIn,true);
 const blobSha=path=>{const content=bytes(path);return createHash('sha1').update('blob '+content.length+'\0').update(content).digest('hex');};
-for(const pin of [r73.changedFacade,r73.newHost,r73.changedScene])assert.equal(blobSha(pin.path),pin.gitBlobSha1,pin.path);
+// R73 historical blobs are frozen in test fixtures, while R75 pins its own
+// current sources. Do not overwrite the R73 evidence with new source hashes.
+for(const pin of [r73.changedFacade,r73.newHost,r73.changedScene])
+ assert.equal(blobSha(r73Fixture(pin.path)),pin.gitBlobSha1,pin.path+' R73 snapshot');
+for(const pin of r75.changedBlobs)assert.equal(blobSha(pin.path),pin.gitBlobSha1,pin.path+' R75 current');
 assert.equal(legacy.workerDefault,'off');
 assert.equal(r67.workerDefault,'off');assert.equal(r68.workerDefault,'off');
 assert.equal(legacy.fileMapping.length,62);
@@ -40,7 +46,7 @@ const hashedGitBlob=(path)=>{
  // Reconstruct the R68 bytes and verify their historical Git blob SHA;
  // any unrelated change to the original renderer still fails this contract.
  if(path==='src/ol/scene.js'){
-   const current=text(path);
+   const current=text(r73Fixture(path));
    const oldDraw='      b.drawArrays(gl.TRIANGLE_STRIP,0,4);\\n      const err=gl.getError();if(err!==gl.NO_ERROR)throw Error("RGBA8 layer composition GL error "+err);\\n'.replaceAll('\\n','\n');
    const newDraw='      b.drawArrays(gl.TRIANGLE_STRIP,0,4);\\n'.replaceAll('\\n','\n');
    const oldEnd='    flush(group);\\n    gl.bindFramebuffer(gl.FRAMEBUFFER,null);\\n    b.invalidateStateCache();'.replaceAll('\\n','\n');
