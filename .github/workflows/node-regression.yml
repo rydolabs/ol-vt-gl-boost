@@ -39,5 +39,8 @@ jobs:
       - name: Verify R73 exclusive renderer and fail-closed facade lifecycle
         run: npm run test:r73
 
+      - name: Verify R75 priming profiling and WebGL composition resource lifecycle
+        run: npm run test:r75
+
       - name: Validate lockfile-based vendor overlay runtime
         run: npm run test:vendor

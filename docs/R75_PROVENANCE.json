@@ -1,0 +1,21 @@
+{
+  "schema": "r75-priming-and-compositor-lifecycle-v1",
+  "baseCommit": "aa0278a77c21f804934733e4d08114b9752e66ae",
+  "workerDefault": "off",
+  "changes": "R75 opt-in CPU priming profiling and context-loss-safe compositor GL cleanup",
+  "changedBlobs": [
+    {
+      "path": "src/OLVectorTileBoost.js",
+      "gitBlobSha1": "5cc94d067d4a15f05e869d35d1655e7b2a0c5758"
+    },
+    {
+      "path": "src/ol/OlExclusiveVectorTileRenderHost.js",
+      "gitBlobSha1": "4e7490ad26e5f45c43211760807aef9bc33928ca"
+    },
+    {
+      "path": "src/ol/scene.js",
+      "gitBlobSha1": "d5ada2fa8d6244c79e7477c4d8af8e48d38ca1ef"
+    }
+  ],
+  "historicalR73Fixtures": "tests/fixtures/r73-pinned/*.snapshot; validated against unmodified R73_PROVENANCE.json"
+}

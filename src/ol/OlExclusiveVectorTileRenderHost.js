@@ -10,11 +10,16 @@
  * original methods before re-enabling OL rendering.
  */
 export class OlExclusiveVectorTileRenderHost {
-  constructor({map,layers,getLayers=null,onError=null}={}){
+  constructor({map,layers,getLayers=null,onError=null,profilePriming=false,now=()=>performance.now()}={}){
     if(!map||!Array.isArray(layers)||!layers.length)throw Error('R73 requires map and vector-tile layers');
     this.map=map;this.layers=layers;this.getLayers=getLayers;this.onError=onError;
     this.active=false;this.originals=new Map();this.disposer=null;
     this.tileRequests=0;this.suppressedDraws=0;this._primed=new WeakMap();
+    // Optional R75 CPU-only tracing; disabled in performance baselines.
+    this.profilePriming=profilePriming===true;this._now=now;
+    this.primingStats={calls:0,totalMs:0,visited:0,requested:0,cacheHits:0,
+      urlRejected:0,tileUrlMs:0,getTileMs:0,getSourceTilesMs:0};
+    this.lastPrime=null;
     this._frame=e=>{try{this.prime(e?.frameState);}catch(error){this.stop();this.onError?.(error);}};
   }
   _source(layer){
@@ -56,6 +61,10 @@ export class OlExclusiveVectorTileRenderHost {
   }
   prime(frameState){
     if(!this.active)return 0;
+    const profiled=this.profilePriming,begin=profiled?this._now():0;
+    const sample=profiled?{visited:0,requested:0,cacheHits:0,urlRejected:0,
+      tileUrlMs:0,getTileMs:0,getSourceTilesMs:0}:null;
+    try{
     // The host cannot silently leave newly added stock WebGL layers drawing
     // under Boost. Fail closed and restore the original OL renderer instead.
     if(this.getLayers){
@@ -82,7 +91,7 @@ export class OlExclusiveVectorTileRenderHost {
       // until its source revision or visible tile range actually changes.
       const signature=[z,range.minX,range.maxX,range.minY,range.maxY,
         projection.getCode?.()??'',source.getRevision?.()??'',source.getKey?.()??''].join('|');
-      if(this._primed.get(source)===signature)continue;
+      if(this._primed.get(source)===signature){if(profiled)sample.cacheHits++;continue;}
       const full=grid.getFullTileRange?.(z);
       // A VectorTileSource can cover a large viewport while its URL function
       // only supplies a sparse subset of tiles. Avoid constructing empty OL
@@ -94,16 +103,42 @@ export class OlExclusiveVectorTileRenderHost {
         if(full&&(x<full.minX||x>full.maxX)&&!source.getWrapX?.())continue;
         const coord=source.getTileCoordForTileUrlFunction?.([z,x,y],projection)||[z,x,y];
         if(!coord)continue;
-        if(tileUrl&&tileUrl(coord,1,projection)===undefined)continue;
-        const renderTile=source.getTile(coord[0],coord[1],coord[2],1,projection);
-        const tiles=source.getSourceTiles(resolution,projection,renderTile);
+        if(profiled)sample.visited++;
+        if(tileUrl){
+          const t=profiled?this._now():0;
+          let url;
+          try{url=tileUrl(coord,1,projection);}finally{if(profiled)sample.tileUrlMs+=this._now()-t;}
+          if(url===undefined){if(profiled)sample.urlRejected++;continue;}
+        }
+        let renderTile,tiles;
+        if(profiled){
+          let t=this._now();
+          try{renderTile=source.getTile(coord[0],coord[1],coord[2],1,projection);}
+          finally{sample.getTileMs+=this._now()-t;}
+          t=this._now();
+          try{tiles=source.getSourceTiles(resolution,projection,renderTile);}
+          finally{sample.getSourceTilesMs+=this._now()-t;}
+        }else{
+          renderTile=source.getTile(coord[0],coord[1],coord[2],1,projection);
+          tiles=source.getSourceTiles(resolution,projection,renderTile);
+        }
         if(!Array.isArray(tiles))throw Error('R73 source tile loader contract changed');
         requested+=tiles.length;
       }
       this._primed.set(source,signature);
     }
     this.tileRequests+=requested;
+    if(profiled)sample.requested=requested;
     return requested;
+    }finally{
+      if(profiled){
+        sample.elapsedMs=this._now()-begin;
+        this.lastPrime=sample;
+        const total=this.primingStats;total.calls++;total.totalMs+=sample.elapsedMs;
+        for(const key of ['visited','requested','cacheHits','urlRejected',
+          'tileUrlMs','getTileMs','getSourceTilesMs'])total[key]+=sample[key];
+      }
+    }
   }
   stop(){
     this.active=false;
@@ -115,5 +150,7 @@ export class OlExclusiveVectorTileRenderHost {
     this.originals.clear();this._primed=new WeakMap();
     return this;
   }
-  snapshot(){return {active:this.active,tileRequests:this.tileRequests,suppressedDraws:this.suppressedDraws,restored:this.originals.size===0};}
+  snapshot(){return {active:this.active,tileRequests:this.tileRequests,suppressedDraws:this.suppressedDraws,
+    restored:this.originals.size===0,
+    ...(this.profilePriming?{priming:{...this.primingStats},lastPrime:this.lastPrime&&{...this.lastPrime}}:{})};}
 }

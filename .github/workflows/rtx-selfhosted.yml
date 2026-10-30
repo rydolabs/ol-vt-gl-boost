@@ -1,10 +1,21 @@
 name: Real RTX 5060 Ti E2E (manual)
 on:
+  # Trigger the physical self-hosted job only when this workflow is modified
+  # by the same-repository R75 PR, not by arbitrary external pull requests.
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.github/workflows/rtx-selfhosted.yml'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   physical-gpu:
+    if: >-
+      ${{ github.event_name == 'workflow_dispatch' ||
+          (github.event.pull_request.head.repo.full_name == github.repository &&
+           github.event.pull_request.head.ref == 'work/r75-priming-compositor-20261029') }}
     # Requires attaching the actual physical Windows RTX runner to THIS repository.
     runs-on: [self-hosted, windows]
     timeout-minutes: 55
@@ -25,6 +36,8 @@ jobs:
         run: |
           npm test
           npm run test:contract
+          npm run test:r73
+          npm run test:r75
       - name: Install browser driver and obtain 32 distinct tiles
         run: |
           npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.55.0

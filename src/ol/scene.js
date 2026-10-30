@@ -156,12 +156,17 @@ export class DirectM5SceneBinding {
     }catch(e){this.stop();throw e;}
   }
   stop(){this.disposeFrame?.();this.disposeFrame=null;this.tree?.stop();this.tree=null;
+    this._releaseLayerComposition();
     for(const key of [...this.layers.keys()])this._unbind(key);
     void this.deferredWorker?.close();
     this.canvasHost.detach();this.started=false;this._scheduleDirty=true;this._cachedSchedule=null;return this;}
   destroy(){this.stop();this.bridge.clear();this.canvasHost.destroy();return this;}
   /** Call after WebGL1Backend.restoreContext() and ResourceManager.handleContextLost(). */
   restoreAfterContextLoss(backend=this.backend){
+    // GL object handles survive in JavaScript after context restoration but
+    // refer to deleted GPU resources, even if the drawing buffer is unchanged.
+    // No GL deletion is valid in a lost context; recreate lazily on next draw.
+    this._releaseLayerComposition({contextLost:true});
     this.backend=backend;
     const count=this.bridge.restoreAfterContextLoss(backend);
     this.map.render?.();
@@ -202,29 +207,43 @@ export class DirectM5SceneBinding {
     if(prune&&this.cacheSceneSchedule){this._cachedSchedule=schedule;this._scheduleDirty=false;}
     return schedule;
   }
+  _releaseLayerComposition({contextLost=false}={}){
+    const target=this._layerFbo;
+    if(!contextLost){
+      // The FBO remembers its original context, not whichever backend was
+      // installed after a restore or renderer replacement.
+      if(target){target.gl.deleteFramebuffer(target.framebuffer);target.gl.deleteTexture(target.texture);}
+      if(this._layerFboQuad)this._layerFboQuadBackend?.deleteBufferResource?.(this._layerFboQuad);
+    }
+    this._layerFbo=null;this._layerFboQuad=null;this._layerFboQuadBackend=null;
+  }
   _renderCompositedLayers(frame,schedule){
     const b=this.backend,gl=b.gl,width=b.canvas.width,height=b.canvas.height;
     // The stock OL vector-tile layers each rasterize to an intermediate RGBA8 target.
     // A direct single-target shader program has different rounding for overlapping
     // translucent layers. This is opt-in and only for multi-layer scenes.
     const prior=this._layerFbo;
-    if(prior&&(prior.width!==width||prior.height!==height)){
-      gl.deleteFramebuffer(prior.framebuffer);gl.deleteTexture(prior.texture);
+    if(prior&&(prior.width!==width||prior.height!==height||prior.gl!==gl)){
+      prior.gl.deleteFramebuffer(prior.framebuffer);prior.gl.deleteTexture(prior.texture);
       this._layerFbo=null;
     }
     if(!this._layerFbo){
       const framebuffer=gl.createFramebuffer(),texture=gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D,texture);
-      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
-      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-      gl.bindFramebuffer(gl.FRAMEBUFFER,framebuffer);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture,0);
-      if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('OL layer RGBA8 framebuffer incomplete');
-      gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-      this._layerFbo={framebuffer,texture,width,height};
+      try{
+        gl.bindTexture(gl.TEXTURE_2D,texture);
+        gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,width,height,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+        gl.bindFramebuffer(gl.FRAMEBUFFER,framebuffer);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,texture,0);
+        if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('OL layer RGBA8 framebuffer incomplete');
+      }catch(error){
+        gl.deleteFramebuffer(framebuffer);gl.deleteTexture(texture);
+        throw error;
+      }finally{gl.bindFramebuffer(gl.FRAMEBUFFER,null);}
+      this._layerFbo={framebuffer,texture,width,height,gl};
     }
     const target=this._layerFbo;
     const vs='attribute vec2 a_vertex;varying vec2 v_uv;void main(){v_uv=(a_vertex+1.0)*0.5;gl_Position=vec4(a_vertex,0.0,1.0);}';
@@ -232,6 +251,7 @@ export class DirectM5SceneBinding {
     const program=b.program('r18.layer.composite',vs,fs);
     if(!this._layerFboQuad){
       this._layerFboQuad=b.createBufferResource('ARRAY_BUFFER',32,'STATIC_DRAW');
+      this._layerFboQuadBackend=b;
       b.uploadBufferResource('ARRAY_BUFFER',this._layerFboQuad,0,new Float32Array([-1,-1,1,-1,-1,1,1,1]));
     }
     const flush=items=>{
