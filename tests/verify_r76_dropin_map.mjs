@@ -48,13 +48,13 @@ class FakeBoost{
   destroy(){this.started=false;this.destroys++;}
   runtimeError(){this.options.onError({phase:'test-err',error:new Error('synthetic')});}
 }
-const Map=createBoostMapClass({
+const DropinMap=createBoostMapClass({
   MapBase:FakeMap,LayerBase:FakeLayer,createBoost:cfg=>new FakeBoost(cfg),
   createCanvas:()=>({style:{display:''}})
 });
 const one=new FakeLayer();
 const originalView={center:[1,2]};
-const m=new Map({target:'map',layers:[one],view:originalView});
+const m=new DropinMap({target:'map',layers:[one],view:originalView});
 assert.equal(m instanceof FakeMap,true);
 assert.equal(m.getBoostStatus().enabled,true);
 assert.equal(m.getView(),originalView);
@@ -106,22 +106,22 @@ assert.equal(m.getBoostStatus().enabled,false);
 assert.match(m.getBoostStatus().reason,/runtime fallback/);
 assert.equal(created[3].destroys,1,'error fallback releases the shared renderer');
 
-const noHit=new Map({target:'map',layers:[new FakeLayer({hitDisabled:false})]});
+const noHit=new DropinMap({target:'map',layers:[new FakeLayer({hitDisabled:false})]});
 assert.equal(noHit.getBoostStatus().enabled,false);
 assert.match(noHit.getBoostStatus().reason,/Hit detection/);
-const mixed=new Map({target:'map',layers:[new FakeLayer(),{}]});
+const mixed=new DropinMap({target:'map',layers:[new FakeLayer(),{}]});
 assert.equal(mixed.getBoostStatus().enabled,false);
 assert.match(mixed.getBoostStatus().reason,/Mixed/);
-const variableStyle=new Map({target:'map',layers:[new FakeLayer({variables:{color:'red'}})]});
+const variableStyle=new DropinMap({target:'map',layers:[new FakeLayer({variables:{color:'red'}})]});
 assert.equal(variableStyle.getBoostStatus().enabled,false);
 assert.match(variableStyle.getBoostStatus().reason,/Style variables/);
-const expression=new Map({target:'map',layers:[new FakeLayer({style:{'stroke-width':['get','width']}})]});
+const expression=new DropinMap({target:'map',layers:[new FakeLayer({style:{'stroke-width':['get','width']}})]});
 assert.equal(expression.getBoostStatus().enabled,false);
 assert.match(expression.getBoostStatus().reason,/Unsupported/);
 
 const many=Array.from({length:50},()=>new FakeLayer());
 const before=created.length;
-const map50=new Map({target:'map',layers:many});
+const map50=new DropinMap({target:'map',layers:many});
 assert.equal(map50.getBoostStatus().enabled,true);
 assert.equal(created.length,before+1,'50 layers must have one shared renderer');
 assert.equal(map50.getAllLayers(),many);
@@ -133,7 +133,7 @@ assert.equal(map50.disposed,true);
 assert.equal(map50.getBoostStatus().enabled,false);
 assert.equal(created.at(-1).destroys,1);
 
-const detached=new Map({target:null,layers:[new FakeLayer()]});
+const detached=new DropinMap({target:null,layers:[new FakeLayer()]});
 assert.equal(detached.getBoostStatus().enabled,false);
 const n=created.length;
 detached.setTarget('later');
