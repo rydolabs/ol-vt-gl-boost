@@ -132,7 +132,7 @@ try {
    await stockPage.waitForFunction(()=>{
      const r=globalThis.__r76;
      return r?.loaded>0 && r?.map?.getTargetElement?.()?.querySelectorAll('canvas.ol-layer, .ol-layer canvas').length>0;
-   },{timeout:35000});
+   },null,{timeout:35000});
    const stockOnly=await stockPage.evaluate(()=>{
      const r=globalThis.__r76,map=r.map,first=r.layers[0];
      const before=first.style_;
