@@ -34,7 +34,7 @@ layer.setSource(nextSource);assert.equal(layer.getSource(),nextSource);
 // Crucial: using the new named layer with an ordinary ol/Map is *not* an
 // implicit GPU takeover. No private layer.render method or renderer is replaced.
 assert.equal(Object.prototype.hasOwnProperty.call(layer,'render'),false);
-assert.equal(layer.render,OriginalWebGLVectorTileLayer.prototype.render);
+assert.equal(layer.render,Reflect.get(OriginalWebGLVectorTileLayer.prototype,'render'));
 assert.equal(layer.createRenderer,OriginalWebGLVectorTileLayer.prototype.createRenderer);
 assert.equal(layer.getBoostStatus,undefined);
 
