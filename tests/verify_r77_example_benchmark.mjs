@@ -17,6 +17,9 @@ assert(page.includes("state.initializationStart=performance.now()"),'timed after
 assert(page.includes("map.setTarget(document.getElementById('map'))"),'identical map attach boundary');
 assert(page.includes("if(!state.ready)throw Error('Wait for first complete frame')"),'no early pan measurement');
 assert(page.includes("firstCompleteFrameMs"),'benchmark metric expected');
+assert(page.includes("queueMicrotask(()=>"),'Boost postrender draw must finish before first-frame stopwatch stops');
+assert(page.includes("b?.snapshot?.().tileCount>=count"),'require all Boost source tiles drawn');
+assert(page.includes("drawElementsInstancedANGLE"),'count actual Boost ANGLE instanced draw calls');
 assert(!page.includes('mapbox.com/v4/'),'do not send requests requiring Mapbox key');
 assert(runner.includes("['stock','boost','boost','stock']"),'ABBA cycle required');
 assert(runner.includes("['boost','stock','stock','boost']"),'BAAB cycle required');
