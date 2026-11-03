@@ -177,6 +177,9 @@ export function createBoostMapClass({MapBase,LayerBase,createBoost,createCanvas}
         boost=createBoost({
           map:this,canvas,canvasMode:'managed-overlay',
           stockOlRenderMode:'exclusive',
+          // Only the opt-in BoostMap defaults to nonblocking. Direct backend
+          // users retain strict per-frame error checks; callers can override.
+          backendOptions:{glErrorCheckMode:'nonblocking',...(this._boostMapOptions.backendOptions||{})},
           layerStyleResolver:layer=>layer.style_,
           vectorTileOptions:{
             drawMode:'style-pass',stableStyleIdentityCache:true,
