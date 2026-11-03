@@ -6,8 +6,9 @@ import {pathToFileURL} from 'node:url';
 const root=resolve(process.argv[2]||'.'),out=resolve(process.argv[3]||join(root,'artifacts/r76-dropin'));
 const {chromium}=await import(pathToFileURL(join(root,'node_modules/playwright/index.mjs')).href);
 await mkdir(out,{recursive:true});
+const software=process.env.R76_ALLOW_SOFTWARE_GL==='1';
 const summary={schema:'r76-boost-map-rtx-smoke-v1',candidate:process.env.R76_CANDIDATE_SHA||null,
-  scenes:[],errors:[],pass:false};
+  mode:software?'software-webgl':'physical-rtx',scenes:[],errors:[],pass:false};
 const port=4185,base='http://127.0.0.1:'+port;
 const server=spawn(process.execPath,[join(root,'examples/compare/serve.mjs')],{cwd:root,env:{...process.env,OLVT_EXAMPLE_PORT:String(port)},stdio:'pipe'});
 let output='',browser=null;
@@ -40,7 +41,9 @@ try {
  }
  check(live,'Server did not start '+output);
  browser=await chromium.launch({executablePath:process.env.M5_BROWSER||'C:/Program Files/Google/Chrome/Application/chrome.exe',
-   headless:true,args:['--enable-webgl','--disable-software-rasterizer','--disable-background-networking','--window-size=620,650']});
+   headless:true,args:software
+     ?['--enable-webgl','--enable-unsafe-swiftshader','--use-angle=swiftshader','--disable-background-networking','--window-size=620,650']
+     :['--enable-webgl','--disable-software-rasterizer','--disable-background-networking','--window-size=620,650']});
  for(const count of [8,50]){
    const page=await browser.newPage({viewport:{width:520,height:560},deviceScaleFactor:1});
    const errors=[];
@@ -65,7 +68,7 @@ try {
      check(init.errors.length===0&&init.status?.enabled,'Drop-in not enabled '+JSON.stringify(init));
      check(init.expected===count&&init.layers===count&&init.sourceLayer,'Existing OL layers not preserved');
      check(init.exclusive&&init.overlayMounted&&init.cssActive&&init.workerOff,'Missing shared GPU ownership '+JSON.stringify(init));
-     check(/NVIDIA.*RTX 5060 Ti/i.test(init.renderer||''),'Not RTX 5060 Ti '+init.renderer);
+     if(!software)check(/NVIDIA.*RTX 5060 Ti/i.test(init.renderer||''),'Not RTX 5060 Ti '+init.renderer);
      await page.waitForFunction(count=>{
        const r=globalThis.__r76,b=r?.map?.boost;
        return b?.scene?.snapshot()?.tileCount>=count && b?.scene?.frames>1;
