@@ -29,7 +29,7 @@ const summary={schema:'r77-example-ol-vs-boost-1',candidate,mode:software?'softw
  measurements:[],aggregates:[],errors:[],pass:false};
 await mkdir(dir,{recursive:true});
 const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
-const median=a=>[...a].sort((x,y)=>x-y)[Math.floor((a.length-1)/2)];
+const median=a=>{const b=[...a].sort((x,y)=>x-y),n=b.length;return n%2?b[(n-1)/2]:(b[n/2-1]+b[n/2])/2;};
 const round=v=>Math.round(v*100)/100;
 try{
  let online=false;
