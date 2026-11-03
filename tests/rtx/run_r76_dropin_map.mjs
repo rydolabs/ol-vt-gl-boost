@@ -44,20 +44,25 @@ try {
    headless:true,args:software
      ?['--enable-webgl','--enable-unsafe-swiftshader','--use-angle=swiftshader','--disable-background-networking','--window-size=620,650']
      :['--enable-webgl','--disable-software-rasterizer','--disable-background-networking','--window-size=620,650']});
- for(const count of [8,50]){
+ for(const {count,layerKind} of [
+   {count:8,layerKind:'boost'},
+   {count:50,layerKind:'boost'},
+   {count:8,layerKind:'stock'},
+   {count:50,layerKind:'stock'}
+ ]){
    const page=await browser.newPage({viewport:{width:520,height:560},deviceScaleFactor:1});
    const errors=[];
    page.on('pageerror',e=>errors.push('pageerror '+String(e)));
    page.on('console',m=>{if(m.type()==='error')errors.push('console '+m.text())});
    await page.route('**/favicon.ico',route=>route.fulfill({status:204,body:''}));
    try{
-     await page.goto(base+'/examples/dropin/index.html?count='+count,{waitUntil:'domcontentloaded',timeout:45000});
+     await page.goto(base+'/examples/dropin/index.html?count='+count+'&layer='+layerKind,{waitUntil:'domcontentloaded',timeout:45000});
      await page.waitForFunction(()=>globalThis.__r76?.ready||globalThis.__r76?.errors?.length,{timeout:50000});
      const init=await page.evaluate(()=>{
        const r=globalThis.__r76,map=r.map;
        if(!map)return {errors:r.errors};
        const gl=map.boost?.backend?.gl,ext=gl?.getExtension('WEBGL_debug_renderer_info');
-       return {errors:r.errors,expected:r.expectedLayers,layers:map.getAllLayers().length,
+       return {errors:r.errors,expected:r.expectedLayers,layerKind:r.layerKind,layers:map.getAllLayers().length,
          status:map.getBoostStatus(),exclusive:map.boost?.exclusiveActive,
          renderer:ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):null,
          overlayMounted:map.boost?.scene?.canvasHost?.attached,
@@ -66,7 +71,7 @@ try {
          frames:map.boost?.scene?.frames??0,sourceLayer:map.getAllLayers()[0]===r.layers[0]};
      });
      check(init.errors.length===0&&init.status?.enabled,'Drop-in not enabled '+JSON.stringify(init));
-     check(init.expected===count&&init.layers===count&&init.sourceLayer,'Existing OL layers not preserved');
+     check(init.expected===count&&init.layers===count&&init.layerKind===layerKind&&init.sourceLayer,'Existing OL layers not preserved');
      check(init.exclusive&&init.overlayMounted&&init.cssActive&&init.workerOff,'Missing shared GPU ownership '+JSON.stringify(init));
      if(!software)check(/NVIDIA.*RTX 5060 Ti/i.test(init.renderer||''),'Not RTX 5060 Ti '+init.renderer);
      await page.waitForFunction(count=>{
@@ -80,7 +85,7 @@ try {
          programCache:boost.backend.programs.size};
      });
      check(frames.layerCount===count&&frames.tileCount>=count&&frames.glError===0,'Incomplete shared scene '+JSON.stringify(frames));
-     const initialPixels=await auditScreenshot(page,'boost-'+count);
+     const initialPixels=await auditScreenshot(page,'boost-'+layerKind+'-'+count);
      const updated=await page.evaluate(()=>{
        const r=globalThis.__r76,boost=r.map.boost,previous=r.layers[0].style_;
        r.layers[0].setStyle({'stroke-color':'#00ff00','stroke-width':5});
@@ -103,18 +108,18 @@ try {
        rollback.centerPreserved&&rollback.resolutionPreserved&&rollback.olCanvasCount>0,
        'Stock OpenLayers rollback failed '+JSON.stringify(rollback));
      await page.waitForTimeout(300);
-     const stockPixels=await auditScreenshot(page,'stock-'+count);
+     const stockPixels=await auditScreenshot(page,'stock-'+layerKind+'-'+count);
      const reenabled=await page.evaluate(()=>{
        const map=globalThis.__r76.map;map.enableBoost();map.renderSync();
        return {status:map.getBoostStatus(),exclusive:map.boost?.exclusiveActive};
      });
      check(reenabled.status.enabled&&reenabled.exclusive,'Cannot re-enable '+JSON.stringify(reenabled));
      check(!errors.length,'Browser errors '+JSON.stringify(errors));
-     summary.scenes.push({count,init,frames,initialPixels,styleUpdated:updated,rollback,stockPixels,reenabled,errors});
-     console.log('R76_PHYSICAL_DROPIN_SCENE_PASS',JSON.stringify({count,programCache:frames.programCache,rollback:rollback.status}));
+     summary.scenes.push({count,layerKind,init,frames,initialPixels,styleUpdated:updated,rollback,stockPixels,reenabled,errors});
+     console.log('R76_PHYSICAL_DROPIN_SCENE_PASS',JSON.stringify({count,layerKind,programCache:frames.programCache,rollback:rollback.status}));
    }finally{await page.close();}
  }
- summary.pass=summary.scenes.length===2;
+ summary.pass=summary.scenes.length===4;
 }catch(e){summary.errors.push(String(e?.stack||e));console.error('R76_PHYSICAL_DROPIN_FAIL',summary.errors.at(-1))}
 finally{
  await writeFile(join(out,'summary.json'),JSON.stringify(summary,null,2)+'\n');
