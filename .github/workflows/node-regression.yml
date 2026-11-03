@@ -42,5 +42,8 @@ jobs:
       - name: Verify R75 priming profiling and WebGL composition resource lifecycle
         run: npm run test:r75
 
+      - name: Verify R76 drop-in BoostMap, 50-layer sharing and fail-closed behavior
+        run: npm run test:r76
+
       - name: Validate lockfile-based vendor overlay runtime
         run: npm run test:vendor
