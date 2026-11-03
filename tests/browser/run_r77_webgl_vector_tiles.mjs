@@ -140,12 +140,12 @@ try{
 finally{
  await writeFile(join(dir,'summary.json'),JSON.stringify(summary,null,2)+'\n');
  const rows=[['count','cycle','phase','renderer','firstCompleteFrameMs','panSubmitMedianMs',
-   'panSubmitP95Ms','createProgram','createShader','useProgram','drawElements','drawArrays','uniqueTileHashes'].join(',')];
+   'panSubmitP95Ms','createProgram','createShader','useProgram','drawElements','drawArrays','drawElementsInstancedANGLE','uniqueTileHashes'].join(',')];
  for(const x of summary.measurements)rows.push([
   x.count,x.cycle,x.phase,x.renderer,round(x.firstCompleteFrameMs),
   round(x.pan.medianMs),round(x.pan.p95Ms),x.glCalls.createProgram,x.glCalls.createShader,
   x.stable.glCalls.useProgram,x.stable.glCalls.drawElements,x.stable.glCalls.drawArrays,
-  x.uniqueTileHashes
+  x.stable.glCalls.drawElementsInstancedANGLE,x.uniqueTileHashes
  ].join(','));
  await writeFile(join(dir,'samples.csv'),rows.join('\n')+'\n');
  try{await browser?.close()}catch{}
