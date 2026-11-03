@@ -1,0 +1,50 @@
+name: R78 diagnostic warm-pan stage profiler (software WebGL)
+on:
+  push:
+    branches: [diag/r78-pan-submission-breakdown-20261103]
+    paths:
+      - 'tests/browser/run_r78_pan_profile.mjs'
+      - '.github/workflows/r78-pan-profile.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pan-profile:
+    runs-on: windows-latest
+    timeout-minutes: 27
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore OL and exact local 32-PBF corpus
+        run: |
+          $ErrorActionPreference='Stop'
+          npm ci --no-audit --no-fund
+          if($LASTEXITCODE -ne 0){throw 'npm ci failed'}
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.55.0
+          if($LASTEXITCODE -ne 0){throw 'playwright install failed'}
+          npm run test:rtx:prepare
+          if($LASTEXITCODE -ne 0){throw 'PBF preparation failed'}
+      - name: Decompose warm-pan map.renderSync stages
+        env:
+          R78_ALLOW_SOFTWARE_GL: '1'
+          R78_CANDIDATE_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference='Stop'
+          node tests/browser/run_r78_pan_profile.mjs . artifacts/r78-profile
+          if($LASTEXITCODE -ne 0){throw 'R78 stage profile failed'}
+          $s=Get-Content artifacts/r78-profile/summary.json -Raw | ConvertFrom-Json
+          if(-not $s.pass -or @($s.cases).Count -ne 2){throw 'Missing R78 stage evidence'}
+          Write-Host 'R78_PAN_STAGE_PROFILE_COMPLETED'
+      - name: Preserve diagnostic JSON including unsafe isolation variants
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r78-software-webgl-pan-stage-profile-diagnostic
+          path: artifacts/r78-profile/**
+          retention-days: 30
+          if-no-files-found: warn
