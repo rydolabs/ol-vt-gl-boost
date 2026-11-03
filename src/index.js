@@ -6,3 +6,7 @@ export {DirectFeatureWebGLPipeline,encodeDirectFeatureTile} from './gl/pipeline.
 export {OLVectorTileBoost} from './OLVectorTileBoost.js';
 
 export {OlExclusiveVectorTileRenderHost} from './ol/OlExclusiveVectorTileRenderHost.js';
+
+// Opt-in one-import OpenLayers Map replacement (OL 10.10.0 only).
+export {BoostMap,createBoostMapClass} from './ol/BoostMap.js';
+export {BoostWebGLVectorTileLayer} from './BoostWebGLVectorTileLayer.js';
