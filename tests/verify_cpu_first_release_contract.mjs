@@ -16,13 +16,27 @@ const r68=JSON.parse(text('docs/R68_PROVENANCE.json'));
 const r73=JSON.parse(text('docs/R73_PROVENANCE.json'));
 const r75=JSON.parse(text('docs/R75_PROVENANCE.json'));
 const r73Fixture=path=>'tests/fixtures/r73-pinned/'+path.replaceAll('/','__')+'.snapshot';
+// R79 adds two precisely pinned, isolated changes. Verify both the new bytes
+// AND the frozen R77 pre-change bytes against the existing R75/R64 provenance.
+// Never rewrite a historical provenance hash to authorize a new implementation.
+const r79Fixture=path=>'tests/fixtures/r79-prechange/'+path.replaceAll('/','__')+'.snapshot';
+const r79Changed={
+  'src/gl/backend.js':'5df92b24333482ff099d69be84cd92ebdf584cde',
+  'src/OLVectorTileBoost.js':'39e515a7336c8526238e97dcb3c5cc77d0abe4b4'
+};
+const historicalR79Bytes=path=>Object.prototype.hasOwnProperty.call(r79Changed,path)
+ ?bytes(r79Fixture(path)):bytes(path);
 assert.equal(r73.workerDefault,'off');assert.equal(r73.optIn,true);
 const blobSha=path=>{const content=bytes(path);return createHash('sha1').update('blob '+content.length+'\0').update(content).digest('hex');};
+for(const [path,hash] of Object.entries(r79Changed))
+ assert.equal(blobSha(path),hash,path+' R79 exact source pin');
 // R73 historical blobs are frozen in test fixtures, while R75 pins its own
 // current sources. Do not overwrite the R73 evidence with new source hashes.
 for(const pin of [r73.changedFacade,r73.newHost,r73.changedScene])
  assert.equal(blobSha(r73Fixture(pin.path)),pin.gitBlobSha1,pin.path+' R73 snapshot');
-for(const pin of r75.changedBlobs)assert.equal(blobSha(pin.path),pin.gitBlobSha1,pin.path+' R75 current');
+for(const pin of r75.changedBlobs)
+ assert.equal(blobSha(pin.path==='src/OLVectorTileBoost.js'?r79Fixture(pin.path):pin.path),
+   pin.gitBlobSha1,pin.path+' R75 ancestor preserved');
 assert.equal(legacy.workerDefault,'off');
 assert.equal(r67.workerDefault,'off');assert.equal(r68.workerDefault,'off');
 assert.equal(legacy.fileMapping.length,62);
@@ -83,7 +97,7 @@ const hashedGitBlob=(path)=>{
    const content=Buffer.from(restored,'utf8');
    return createHash('sha1').update('blob '+content.length+'\0').update(content).digest('hex');
  }
- const content=bytes(path);
+ const content=historicalR79Bytes(path);
  return createHash('sha1').update('blob '+content.length+'\0').update(content).digest('hex');
 };
 for(const row of legacy.fileMapping){
@@ -93,7 +107,7 @@ for(const row of legacy.fileMapping){
  assert(existsSync(mapped68),mapped68+' missing from R68 layout');
  if(changed.has(mapped68))assert.equal(hashedGitBlob(mapped68),changed.get(mapped68),mapped68);
  else if(previous.has(mapped68))assert.equal(hashedGitBlob(mapped68),previous.get(mapped68),mapped68);
- else assert.equal(createHash('sha256').update(bytes(mapped68)).digest('hex'),row.newSha256,row.new);
+ else assert.equal(createHash('sha256').update(historicalR79Bytes(mapped68)).digest('hex'),row.newSha256,row.new);
 }
 for(const [path,sha] of previous){
  const dst=r68.redirects[path]??path;
