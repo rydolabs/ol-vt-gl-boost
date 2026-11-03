@@ -38,6 +38,16 @@ export class OLVectorTileBoost {
       }:vectorTileOptions,layerStyleResolver,
       onError:stockOlRenderMode==='exclusive'?failClosed:onError,strictVectorTiles,deferredWorker});
     this._failClosed=failClosed;
+    // A nonblocking frame cannot detect arbitrary GL errors synchronously.
+    // Keep a real context-loss fail-closed signal independent of getError().
+    this._onWebGLContextLost=event=>{
+      event?.preventDefault?.();
+      if(this.started||this.exclusiveActive)this._failClosed({
+        error:new Error('Boost WebGL context lost'),phase:'webglcontextlost'
+      });
+    };
+    if(this.stockOlRenderMode==='exclusive')
+      this.canvas?.addEventListener?.('webglcontextlost',this._onWebGLContextLost);
     // The single-renderer integration owns tile clipping while active.
     // Clip to each source tile before disjoint-domain FBO eligibility checks.
     // Explicit opt-out retains the original OL-style compositor.
@@ -71,7 +81,8 @@ export class OLVectorTileBoost {
     }
   }
   stop(){this.exclusiveHost?.stop();this.scene.stop();return this;}
-  destroy(){this.exclusiveHost?.stop();this.scene.destroy();return this;}
+  destroy(){this.canvas?.removeEventListener?.('webglcontextlost',this._onWebGLContextLost);
+    this.exclusiveHost?.stop();this.scene.destroy();return this;}
   sync(){return this.scene.sync();}
   snapshot(){return {...this.scene.snapshot(),exclusiveHost:this.exclusiveHost?.snapshot()??null};}
   restoreAfterContextLoss(backend=this.backend){
