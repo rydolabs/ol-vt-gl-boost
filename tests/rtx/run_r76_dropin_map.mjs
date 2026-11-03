@@ -97,7 +97,7 @@ try {
          cssActive:map.getViewport().classList.contains('olvt-boost-exclusive'),
          centerPreserved:JSON.stringify(before.center)===JSON.stringify(view.getCenter()),
          resolutionPreserved:before.resolution===view.getResolution(),
-         olCanvasCount:map.getTargetElement().querySelectorAll('.ol-layer canvas').length};
+         olCanvasCount:map.getTargetElement().querySelectorAll('canvas.ol-layer, .ol-layer canvas').length};
      });
      check(!rollback.status.enabled&&!rollback.boost&&!rollback.cssActive&&
        rollback.centerPreserved&&rollback.resolutionPreserved&&rollback.olCanvasCount>0,
