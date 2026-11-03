@@ -37,8 +37,13 @@ const hashedGitBlob=(path)=>{
  if(path==='src/index.js'){
    const current=text(path);
    const marker="\nexport {OlExclusiveVectorTileRenderHost} from './ol/OlExclusiveVectorTileRenderHost.js';\n";
-   assert(current.endsWith(marker),'Unexpected src/index.js modifications beyond R73 opt-in export');
-   const original=Buffer.from(current.slice(0,-marker.length),'utf8');
+   // An exact, additive R76 public export is permitted without weakening the
+   // historical R68/R73 byte-level contract. No other index changes are allowed.
+   const r76Suffix="\n// Opt-in one-import OpenLayers Map replacement (OL 10.10.0 only).\nexport {BoostMap,createBoostMapClass} from './ol/BoostMap.js';\n";
+   assert(current.endsWith(r76Suffix),'Unexpected src/index.js changes beyond R76 export');
+   const withoutR76=current.slice(0,-r76Suffix.length);
+   assert(withoutR76.endsWith(marker),'Unexpected src/index.js modifications beyond R73 opt-in export');
+   const original=Buffer.from(withoutR76.slice(0,-marker.length),'utf8');
    return createHash('sha1').update('blob '+original.length+'\0').update(original).digest('hex');
  }
 
