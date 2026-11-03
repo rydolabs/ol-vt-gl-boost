@@ -31,7 +31,7 @@ import WebGLVectorTileLayer from '../../vendor/openlayers-10.10.0-runtime/node_m
 const report={ready:false,errors:[],loaded:0};
 globalThis.__r76=report;
 const status=document.getElementById('status');
-const publish=()=>status.textContent=JSON.stringify(report,null,2);
+const publish=()=>status.textContent=JSON.stringify({...report,map:undefined,layers:undefined,view:undefined},null,2);
 addEventListener('error',e=>{report.errors.push(String(e.error||e.message));publish();});
 addEventListener('unhandledrejection',e=>{report.errors.push(String(e.reason));publish();});
 try {
