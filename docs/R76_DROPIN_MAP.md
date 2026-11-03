@@ -1,5 +1,27 @@
 # R76 drop-in Map compatibility (experimental)
 
+## Paired public API: BoostWebGLVectorTileLayer + BoostMap
+
+The final **names** are `BoostWebGLVectorTileLayer` and `BoostMap`. They are exported by `src/index.js`. A full source-tree example is:
+
+```js
+import {BoostMap,BoostWebGLVectorTileLayer} from './src/index.js';
+import VectorTileSource from 'ol/source/VectorTile.js';
+import MVT from 'ol/format/MVT.js';
+import View from 'ol/View.js';
+
+const layer=new BoostWebGLVectorTileLayer({
+  source:new VectorTileSource({format:new MVT(),url:'/tiles/{z}/{x}/{y}.pbf'}),
+  style:{'stroke-color':'#336699','stroke-width':2},
+  disableHitDetection:true
+});
+const map=new BoostMap({target:'map',layers:[layer],view:new View({center:[0,0],zoom:10})});
+```
+
+`BoostWebGLVectorTileLayer` **extends the actual OL 10.10.0 WebGLVectorTileLayer**, preserving the native class contract and style/source/setters. It allocates no independent GPU backend. **`BoostMap` supplies the map-wide shared Boost scene.** If only the layer class is swapped but the map remains `ol/Map.js`, rendering intentionally stays on the original Stock OL WebGL renderer—do not claim acceleration for that case. Conversely, `BoostMap` can accelerate unchanged original OL WebGLVectorTileLayer instances too.
+
+The real-browser suite covers four combinations (8/50 × named Boost/original OL layer) with BoostMap, plus a fifth named Boost layer + original OL Map scenario for safe fallback. The suite records nonblank real screenshots, 50 retained source tiles, GPU program cache, style update, rollback to stock OL, unchanged view and reactivation. Hosted Chromium uses software WebGL; this is not a physical RTX GPU pass.
+
 ## One-import migration
 
 Replace only the OpenLayers **Map import**. Existing `WebGLVectorTileLayer`, `VectorTileSource`, `View`, layer styles, map options, sources and layer references remain unchanged.
