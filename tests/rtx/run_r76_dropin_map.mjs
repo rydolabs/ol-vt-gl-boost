@@ -119,7 +119,39 @@ try {
      console.log('R76_PHYSICAL_DROPIN_SCENE_PASS',JSON.stringify({count,layerKind,programCache:frames.programCache,rollback:rollback.status}));
    }finally{await page.close();}
  }
- summary.pass=summary.scenes.length===4;
+ // A renamed layer in the *original* OL Map must remain a genuine OL layer,
+ // rather than creating a separate hidden Boost context or breaking picking.
+ const stockPage=await browser.newPage({viewport:{width:520,height:560},deviceScaleFactor:1});
+ const stockErrors=[];
+ stockPage.on('pageerror',e=>stockErrors.push(String(e)));
+ try{
+   await stockPage.goto(base+'/examples/dropin/index.html?count=8&layer=boost&mode=stock',
+     {waitUntil:'domcontentloaded',timeout:45000});
+   await stockPage.waitForFunction(()=>globalThis.__r76?.ready||globalThis.__r76?.errors?.length,
+     {timeout:50000});
+   await stockPage.waitForFunction(()=>{
+     const r=globalThis.__r76;
+     return r?.loaded>0 && r?.map?.getTargetElement?.()?.querySelectorAll('canvas.ol-layer, .ol-layer canvas').length>0;
+   },{timeout:35000});
+   const stockOnly=await stockPage.evaluate(()=>{
+     const r=globalThis.__r76,map=r.map,first=r.layers[0];
+     const before=first.style_;
+     first.setStyle({'stroke-color':'#44aa22','stroke-width':3});
+     map.renderSync();
+     return {errors:r.errors,layerKind:r.layerKind,layerCount:map.getAllLayers().length,
+       boostPresent:!!map.boost,hasBoostApi:typeof map.getBoostStatus==='function',
+       stockCanvasCount:map.getTargetElement().querySelectorAll('canvas.ol-layer, .ol-layer canvas').length,
+       sameLayer:map.getAllLayers()[0]===first,styleUpdated:first.style_!==before};
+   });
+   check(stockOnly.errors.length===0&&stockErrors.length===0&&stockOnly.layerKind==='boost'&&
+     stockOnly.layerCount===8&&!stockOnly.boostPresent&&!stockOnly.hasBoostApi&&
+     stockOnly.stockCanvasCount>0&&stockOnly.sameLayer&&stockOnly.styleUpdated,
+     'Named layer not native OL Map compatible '+JSON.stringify(stockOnly));
+   const pixels=await auditScreenshot(stockPage,'original-ol-map-with-boost-layer-8');
+   summary.stockMapLayerOnly={...stockOnly,pixels,pass:true};
+   console.log('R76_BOOST_LAYER_WITH_ORIGINAL_OL_MAP_PASS',JSON.stringify(stockOnly));
+ }finally{await stockPage.close()}
+ summary.pass=summary.scenes.length===4&&summary.stockMapLayerOnly?.pass===true;
 }catch(e){summary.errors.push(String(e?.stack||e));console.error('R76_PHYSICAL_DROPIN_FAIL',summary.errors.at(-1))}
 finally{
  await writeFile(join(out,'summary.json'),JSON.stringify(summary,null,2)+'\n');
