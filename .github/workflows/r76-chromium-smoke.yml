@@ -1,0 +1,50 @@
+name: R76 drop-in Map browser compatibility (Chromium software fallback)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/r76-chromium-smoke.yml'
+      - 'examples/dropin/**'
+      - 'src/ol/BoostMap.js'
+      - 'tests/rtx/run_r76_dropin_map.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install immutable OpenLayers, Chromium driver and PBF test data
+        run: |
+          npm ci --no-audit --no-fund
+          if($LASTEXITCODE -ne 0){throw 'npm ci failed'}
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.55.0
+          if($LASTEXITCODE -ne 0){throw 'playwright install failed'}
+          npm run test:rtx:prepare
+          if($LASTEXITCODE -ne 0){throw 'PBF preparation failed'}
+      - name: Real Chromium map import swap, 8/50 layers, style updates and stock rollback
+        env:
+          R76_ALLOW_SOFTWARE_GL: '1'
+          R76_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          node tests/rtx/run_r76_dropin_map.mjs . artifacts/r76-dropin
+          if($LASTEXITCODE -ne 0){throw 'Chromium R76 API integration smoke failed'}
+          $r=Get-Content artifacts/r76-dropin/summary.json -Raw | ConvertFrom-Json
+          if(-not $r.pass -or @($r.scenes).Count -ne 2){throw 'Missing 8/50 layer browser evidence'}
+          Write-Host 'R76_CHROMIUM_8_AND_50_LAYER_API_PASS'
+      - name: Preserve browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: olvt-r76-chromium-8-and-50-layer
+          path: artifacts/r76-dropin/**
+          if-no-files-found: warn
+          retention-days: 30
