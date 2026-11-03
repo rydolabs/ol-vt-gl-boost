@@ -1,7 +1,7 @@
 name: Core Regression (Ubuntu and Windows)
 on:
   push:
-    branches: [main, refactor/r64-functional-layout]
+    branches: [main, refactor/r64-functional-layout, work/r77-webgl-vector-tile-example-benchmark-20261103]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -44,6 +44,9 @@ jobs:
 
       - name: Verify R76 BoostWebGLVectorTileLayer and BoostMap 50-layer compatibility
         run: npm run test:r76
+
+      - name: Verify R77 OpenLayers official-example-inspired benchmark contract
+        run: npm run test:r77:contract
 
       - name: Validate lockfile-based vendor overlay runtime
         run: npm run test:vendor

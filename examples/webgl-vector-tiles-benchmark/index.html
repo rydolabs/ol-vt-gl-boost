@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WebGL Vector Tiles: OpenLayers 10.10.0 vs BoostMap (fair local MVT)</title>
+<script type="importmap">
+{"imports":{
+ "ol/":"/vendor/openlayers-10.10.0-runtime/node_modules/ol/",
+ "pbf":"/vendor/openlayers-10.10.0-runtime/node_modules/pbf/index.js",
+ "earcut":"/vendor/openlayers-10.10.0-runtime/node_modules/earcut/src/earcut.js",
+ "rbush":"/vendor/openlayers-10.10.0-runtime/node_modules/rbush/index.js",
+ "quickselect":"/vendor/openlayers-10.10.0-runtime/node_modules/quickselect/index.js"
+}}
+</script>
+<style>
+:root{font:14px system-ui,sans-serif;color:#e2e8f0;background:#0b1422}
+body{margin:0;padding:20px;max-width:1100px}
+h1{font-size:22px;margin:0 0 8px}p{line-height:1.5;color:#b5c5dd;max-width:940px}
+label{margin-right:10px}select,button{background:#23344f;border:1px solid #73859e;color:#fff;padding:7px 11px;border-radius:4px;cursor:pointer}
+#map{width:512px;height:512px;position:relative;background:#e6e5df;overflow:hidden}
+.panel{display:grid;grid-template-columns:512px minmax(300px,1fr);gap:16px}
+pre{background:#172438;white-space:pre-wrap;overflow-wrap:anywhere;padding:16px;margin:0;line-height:1.5;max-height:512px;overflow:auto}
+footer{margin-top:12px;color:#a3b5cd;font-size:12px}
+@media(max-width:950px){.panel{grid-template-columns:1fr}#map{max-width:100%}}
+</style></head><body>
+<h1>WebGL Vector Tiles — OpenLayers vs Boost</h1>
+<p>Inspired by OpenLayers' WebGL Vector Tiles example. Both modes use the <b>same local MapLibre
+OpenMapTiles MVT bytes, literal colors/widths, pinned OL 10.10.0, map size and view</b>.
+The official example uses Mapbox-hosted MVT and a much richer rule/text style, so these
+numbers must <b>not</b> be presented as an exact reproduction of its style workload.</p>
+<label>Renderer
+<select id="renderer"><option value="stock">Stock OL 10.10.0</option><option value="boost">BoostMap + BoostWebGLVectorTileLayer</option></select></label>
+<label>Independent MVT sources
+<select id="count"><option>1</option><option>8</option><option>16</option><option selected>32</option></select></label>
+<button id="pan">Measure pan submission (24 frames)</button>
+<p>Measurement excludes PBF download; first complete frame starts before attaching the map.
+Pan timings are <b>main-thread renderSync() submission</b>, not GPU frame time or sustained FPS.
+Do not compare two simultaneously running maps: select a renderer or run automated ABBA.</p>
+<div class="panel"><div id="map" role="img" aria-label="Vector tile test map"></div>
+<pre id="report">Initializing local tiles ...</pre></div>
+<footer>Data attribution: MapLibre public OpenMapTiles demo (Innsbruck) / OpenStreetMap contributors.
+No Mapbox access token needed. Benchmarks are development-only; the unpublished R76 Boost API
+requires a compatible all-vector-tile scene and hit detection disabled.</footer>
+<script type="module">
+import OLMap from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/Map.js';
+import BoostMap from '../../src/ol/BoostMap.js';
+import View from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/View.js';
+import Projection from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/proj/Projection.js';
+import {addProjection} from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/proj.js';
+import TileGrid from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/tilegrid/TileGrid.js';
+import MVT from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/format/MVT.js';
+import VectorTileSource from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/source/VectorTile.js';
+import WebGLVectorTileLayer from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/layer/WebGLVectorTile.js';
+import BoostWebGLVectorTileLayer from '../../src/BoostWebGLVectorTileLayer.js';
+
+const params=new URLSearchParams(location.search);
+const renderer=params.get('renderer')==='boost'?'boost':'stock';
+const count=[1,8,16,32].includes(Number(params.get('count')))?Number(params.get('count')):32;
+document.getElementById('renderer').value=renderer;
+document.getElementById('count').value=String(count);
+function navigate(){
+ const url=new URL(location.href);
+ url.searchParams.set('renderer',document.getElementById('renderer').value);
+ url.searchParams.set('count',document.getElementById('count').value);
+ location.href=url.toString();
+}
+document.getElementById('renderer').onchange=navigate;
+document.getElementById('count').onchange=navigate;
+
+const glCalls={createProgram:0,createShader:0,useProgram:0,drawArrays:0,drawElements:0,
+ drawElementsInstancedANGLE:0};
+const proto=WebGLRenderingContext.prototype;
+for(const key of ['createProgram','createShader','useProgram','drawArrays','drawElements']){
+ const original=proto[key];
+ if(typeof original!=='function')throw Error('Cannot instrument '+key);
+ proto[key]=function(...args){glCalls[key]++;return original.apply(this,args)};
+}
+// Boost draws solid lines through ANGLE_instanced_arrays, rather than through
+// the core WebGL1 drawElements method. Count both to avoid a false zero.
+const rawGetExtension=proto.getExtension,wrappedInstancing=new WeakSet();
+proto.getExtension=function(name){
+ const ext=rawGetExtension.call(this,name);
+ if(name==='ANGLE_instanced_arrays'&&ext&&!wrappedInstancing.has(ext)){
+  const draw=ext.drawElementsInstancedANGLE;
+  if(typeof draw!=='function')throw Error('ANGLE drawElementsInstancedANGLE unavailable');
+  ext.drawElementsInstancedANGLE=function(...args){
+   glCalls.drawElementsInstancedANGLE++;
+   return draw.apply(this,args);
+  };
+  wrappedInstancing.add(ext);
+ }
+ return ext;
+};
+const state={ready:false,renderer,count,loadedCount:0,firstCompleteFrameMs:null,
+  initializationStart:null,postrenderCount:0,glCalls,errors:[],panStats:null,
+  tiles:[],layerKinds:{},map:null,layers:[],view:null};
+globalThis.__webglExampleBenchmark=state;
+const display=()=>{
+ const boost=state.map?.boost,st=state.map?.getBoostStatus?.();
+ document.getElementById('report').textContent=JSON.stringify({
+  renderer,count,source:state.layerKinds,loaded:state.loadedCount,
+  firstCompleteFrameMs:state.firstCompleteFrameMs,
+  postrenderCount:state.postrenderCount,
+  boostStatus:st??null,
+  boostExclusive:boost?.exclusiveActive??false,
+  boostTileCount:boost?.snapshot?.().tileCount??null,
+  boostProgramCacheSize:boost?.backend?.programs?.size??null,
+  glCalls,panStats:state.panStats,errors:state.errors
+ },null,2);
+};
+function fail(error){state.errors.push(String(error?.stack||error));display();}
+addEventListener('error',event=>fail(event.error||event.message));
+addEventListener('unhandledrejection',event=>fail(event.reason));
+const styleFor=kind=>{
+ if(kind==='transportation')return {'stroke-color':'#dd8063','stroke-width':2};
+ if(kind==='water')return {'fill-color':'#a0c8f0'};
+ if(kind==='landcover'||kind==='park')return {'fill-color':'#d8e8c8'};
+ if(kind==='boundary')return {'stroke-color':'#9e9cab','stroke-width':1};
+ return {'fill-color':'#f2eae2','stroke-color':'#dfdbd7','stroke-width':1};
+};
+const percentiles=s=>{
+ const a=[...s].sort((x,y)=>x-y);
+ const p=q=>a[Math.min(a.length-1,Math.max(0,Math.ceil(q*a.length)-1))];
+ return {count:a.length,medianMs:p(.5),p95Ms:p(.95),meanMs:a.reduce((n,x)=>n+x,0)/a.length,maxMs:a.at(-1)};
+};
+
+try{
+ const response=await fetch('/tests/fixtures/r46-data/manifest.json',{cache:'no-store'});
+ if(!response.ok)throw Error('Missing local MVT: run npm run test:rtx:prepare');
+ const manifest=await response.json();
+ if(manifest.sources?.length!==32||new Set(manifest.sources.map(s=>s.sha256)).size!==32)
+  throw Error('Expected 32 independently sourced MVT PBF hashes');
+ const selected=manifest.sources.slice(0,count);
+ const tileBytes=new Map();
+ // Prepare PBF *before* either renderer starts; no network time is counted.
+ for(const part of selected){
+  const key=part.x+'/'+part.y;
+  const r=await fetch('/tests/fixtures/r46-data/tiles/12/'+key+'.pbf');
+  if(!r.ok)throw Error('Missing PBF '+key);
+  tileBytes.set(key,await r.arrayBuffer());
+  state.tiles.push({sha256:part.sha256,layer:part.layer,x:part.x,y:part.y});
+  state.layerKinds[part.layer]=(state.layerKinds[part.layer]||0)+1;
+ }
+ const projection=new Projection({code:'OLVT:LOCAL',units:'m',extent:[0,0,32768,16384]});
+ addProjection(projection);
+ const tileGrid=new TileGrid({extent:[0,0,32768,16384],origin:[0,16384],resolutions:[64],tileSize:64});
+ const view=new View({projection,center:[16384,8192],resolution:64,constrainResolution:false});
+ const LayerClass=renderer==='boost'?BoostWebGLVectorTileLayer:WebGLVectorTileLayer;
+ const layers=selected.map((part,index)=>{
+  const format=new MVT({layers:[part.layer]});
+  const source=new VectorTileSource({
+   format,projection,tileGrid,wrapX:false,transition:0,
+   tileUrlFunction:([,x,y])=>(x===index%8&&y===Math.floor(index/8))?part.x+'/'+part.y:undefined,
+   tileLoadFunction:(tile,url)=>tile.setLoader((extent,resolution,featureProjection)=>{
+    const bytes=tileBytes.get(url);
+    if(!bytes){tile.setState(3);fail(Error('PBF not cached '+url));return;}
+    try{tile.setFeatures(format.readFeatures(bytes.slice(0),{extent,featureProjection}));}
+    catch(error){tile.setState(3);fail(error);}
+   })
+  });
+  source.on('tileloadend',()=>{state.loadedCount++;display();});
+  return new LayerClass({source,style:styleFor(part.layer),disableHitDetection:true});
+ });
+ const MapClass=renderer==='boost'?BoostMap:OLMap;
+ // Both modes use the exact same no-target -> setTarget lifecycle.
+ const map=new MapClass({target:null,layers,view,controls:[],interactions:[]});
+ state.map=map;state.layers=layers;state.view=view;
+ map.on('postrender',()=>{
+  state.postrenderCount++;
+  // This listener may precede Boost's own postrender draw listener. Defer
+  // completion until *all* postrender handlers returned, then require the
+  // shared scene to have drawn every loaded source tile.
+  queueMicrotask(()=>{
+   const b=map.boost;
+   const boostReady=renderer!=='boost'||(b?.exclusiveActive===true&&
+    b?.scene?.frames>0&&b?.snapshot?.().tileCount>=count&&
+    b?.snapshot?.().frameStats?.glError===0);
+   if(state.firstCompleteFrameMs===null&&state.loadedCount>=count&&
+     boostReady&&(!map.getBoostStatus||map.getBoostStatus().enabled)){
+    state.firstCompleteFrameMs=performance.now()-state.initializationStart;
+    state.ready=true;
+   }
+   display();
+  });
+ });
+ state.initializationStart=performance.now();
+ map.setTarget(document.getElementById('map'));
+ map.renderSync();
+ const monitor=setInterval(()=>{
+  if(state.ready||state.errors.length){clearInterval(monitor);return;}
+  if(state.loadedCount>=count)map.renderSync();
+ },40);
+ setTimeout(()=>{clearInterval(monitor);if(!state.ready)fail(Error('First complete frame did not render in 20s'))},20000);
+ state.runPan=async(frames=24)=>{
+  if(!state.ready)throw Error('Wait for first complete frame');
+  const samples=[],start=[...view.getCenter()];
+  for(let i=0;i<frames;i++){
+   await new Promise(resolve=>requestAnimationFrame(resolve));
+   const delta=(i%2===0?1:-1)*64;
+   view.setCenter([start[0]+delta,start[1]]);
+   const t=performance.now();map.renderSync();samples.push(performance.now()-t);
+  }
+  view.setCenter(start);map.renderSync();
+  state.panStats=percentiles(samples);display();return {...state.panStats};
+ };
+ document.getElementById('pan').onclick=()=>state.runPan().catch(fail);
+ display();
+}catch(error){fail(error)}
+</script></body></html>

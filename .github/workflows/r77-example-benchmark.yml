@@ -1,0 +1,50 @@
+name: R77 WebGL Vector Tiles example OL versus Boost ABBA
+on:
+  push:
+    branches: [work/r77-webgl-vector-tile-example-benchmark-20261103]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  example-benchmark:
+    runs-on: windows-latest
+    timeout-minutes: 38
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install OL 10.10.0, Playwright and local public MVT fixture
+        run: |
+          $ErrorActionPreference='Stop'
+          npm ci --no-audit --no-fund
+          if($LASTEXITCODE -ne 0){throw 'npm ci failed'}
+          npm run test:r77:contract
+          if($LASTEXITCODE -ne 0){throw 'R77 contract failed'}
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.55.0
+          if($LASTEXITCODE -ne 0){throw 'Playwright install failed'}
+          npm run test:rtx:prepare
+          if($LASTEXITCODE -ne 0){throw 'Local 32-PBF preparation failed'}
+      - name: Stock OL vs Boost 1/8/16/32 source ABBA browser samples
+        env:
+          R77_ALLOW_SOFTWARE_GL: '1'
+          R77_CANDIDATE_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference='Stop'
+          node tests/browser/run_r77_webgl_vector_tiles.mjs . artifacts/r77-example
+          if($LASTEXITCODE -ne 0){throw 'ABBA benchmark failed'}
+          $s=Get-Content artifacts/r77-example/summary.json -Raw | ConvertFrom-Json
+          if(-not $s.pass -or @($s.measurements).Count -ne 32 -or @($s.aggregates).Count -ne 4){throw 'ABBA samples incomplete'}
+          if($s.mode -ne 'software-webgl'){throw 'Hosted runner hardware label mismatch'}
+          Write-Host 'R77_HOSTED_CHROMIUM_ABBA_32_CASES_PASS'
+      - name: Preserve screenshot, CSV, and JSON evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r77-webgl-vector-tiles-ol-vs-boost-abba-software-webgl
+          path: artifacts/r77-example/**
+          retention-days: 30
+          if-no-files-found: warn
