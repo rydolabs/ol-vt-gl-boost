@@ -66,13 +66,30 @@ function navigate(){
 document.getElementById('renderer').onchange=navigate;
 document.getElementById('count').onchange=navigate;
 
-const glCalls={createProgram:0,createShader:0,useProgram:0,drawArrays:0,drawElements:0};
+const glCalls={createProgram:0,createShader:0,useProgram:0,drawArrays:0,drawElements:0,
+ drawElementsInstancedANGLE:0};
 const proto=WebGLRenderingContext.prototype;
-for(const key of Object.keys(glCalls)){
+for(const key of ['createProgram','createShader','useProgram','drawArrays','drawElements']){
  const original=proto[key];
  if(typeof original!=='function')throw Error('Cannot instrument '+key);
  proto[key]=function(...args){glCalls[key]++;return original.apply(this,args)};
 }
+// Boost draws solid lines through ANGLE_instanced_arrays, rather than through
+// the core WebGL1 drawElements method. Count both to avoid a false zero.
+const rawGetExtension=proto.getExtension,wrappedInstancing=new WeakSet();
+proto.getExtension=function(name){
+ const ext=rawGetExtension.call(this,name);
+ if(name==='ANGLE_instanced_arrays'&&ext&&!wrappedInstancing.has(ext)){
+  const draw=ext.drawElementsInstancedANGLE;
+  if(typeof draw!=='function')throw Error('ANGLE drawElementsInstancedANGLE unavailable');
+  ext.drawElementsInstancedANGLE=function(...args){
+   glCalls.drawElementsInstancedANGLE++;
+   return draw.apply(this,args);
+  };
+  wrappedInstancing.add(ext);
+ }
+ return ext;
+};
 const state={ready:false,renderer,count,loadedCount:0,firstCompleteFrameMs:null,
   initializationStart:null,postrenderCount:0,glCalls,errors:[],panStats:null,
   tiles:[],layerKinds:{},map:null,layers:[],view:null};
@@ -149,13 +166,21 @@ try{
  state.map=map;state.layers=layers;state.view=view;
  map.on('postrender',()=>{
   state.postrenderCount++;
-  if(state.firstCompleteFrameMs===null&&state.loadedCount>=count
-    &&(renderer!=='boost'||map.boost?.exclusiveActive===true)
-    &&(!map.getBoostStatus||map.getBoostStatus().enabled)){
-   state.firstCompleteFrameMs=performance.now()-state.initializationStart;
-   state.ready=true;
-  }
-  display();
+  // This listener may precede Boost's own postrender draw listener. Defer
+  // completion until *all* postrender handlers returned, then require the
+  // shared scene to have drawn every loaded source tile.
+  queueMicrotask(()=>{
+   const b=map.boost;
+   const boostReady=renderer!=='boost'||(b?.exclusiveActive===true&&
+    b?.scene?.frames>0&&b?.snapshot?.().tileCount>=count&&
+    b?.snapshot?.().frameStats?.glError===0);
+   if(state.firstCompleteFrameMs===null&&state.loadedCount>=count&&
+     boostReady&&(!map.getBoostStatus||map.getBoostStatus().enabled)){
+    state.firstCompleteFrameMs=performance.now()-state.initializationStart;
+    state.ready=true;
+   }
+   display();
+  });
  });
  state.initializationStart=performance.now();
  map.setTarget(document.getElementById('map'));
