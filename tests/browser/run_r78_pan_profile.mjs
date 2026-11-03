@@ -158,7 +158,7 @@ try{
     for(const undo of originals.reverse())try{undo()}catch{}
     return {renderer:map.boost?.backend?.gl?.getParameter?.(
       backend.gl.getExtension('WEBGL_debug_renderer_info')?.UNMASKED_RENDERER_WEBGL)||null,
-      count,tiles:boost.snapshot().tileCount,phaseResults:outputs,errors:s.errors};
+      count:s.count,tiles:boost.snapshot().tileCount,phaseResults:outputs,errors:s.errors};
    });
    if(data.errors.length||data.tiles<count||data.phaseResults.length!==6||pageErrors.length)
     throw Error('Incomplete profile '+JSON.stringify({data,pageErrors}));
