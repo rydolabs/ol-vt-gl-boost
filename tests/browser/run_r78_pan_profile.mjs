@@ -50,6 +50,9 @@ try{
    await page.waitForFunction(()=>globalThis.__webglExampleBenchmark?.ready ||
      globalThis.__webglExampleBenchmark?.errors?.length,null,{timeout:60000});
    const data=await page.evaluate(async()=>{
+    const rnd=x=>Math.round(x*100)/100;
+    const median=a=>{const b=[...a].sort((x,y)=>x-y),n=b.length;return n?(n%2?b[(n-1)/2]:(b[n/2-1]+b[n/2])/2):0;};
+    const mean=a=>a.reduce((v,x)=>v+x,0)/(a.length||1);
     const s=globalThis.__webglExampleBenchmark;
     if(!s.ready||s.errors.length)throw Error('Scene not ready '+JSON.stringify(s.errors));
     const map=s.map,boost=map.boost,scene=boost.scene,backend=boost.backend,pipeline=scene.bridge.pipeline;
