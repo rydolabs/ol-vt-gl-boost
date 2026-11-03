@@ -16,7 +16,7 @@ assert(page.includes("new Set(manifest.sources.map(s=>s.sha256)).size!==32"),'PB
 assert(page.includes("state.initializationStart=performance.now()"),'timed after PBF preparation');
 assert(page.includes("map.setTarget(document.getElementById('map'))"),'identical map attach boundary');
 assert(page.includes("if(!state.ready)throw Error('Wait for first complete frame')"),'no early pan measurement');
-assert(page.includes("measure"),'benchmark text expected');
+assert(page.includes("firstCompleteFrameMs"),'benchmark metric expected');
 assert(!page.includes('mapbox.com/v4/'),'do not send requests requiring Mapbox key');
 assert(runner.includes("['stock','boost','boost','stock']"),'ABBA cycle required');
 assert(runner.includes("['boost','stock','stock','boost']"),'BAAB cycle required');
