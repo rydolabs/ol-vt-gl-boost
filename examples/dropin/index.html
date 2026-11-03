@@ -27,6 +27,7 @@ import TileGrid from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/ti
 import MVT from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/format/MVT.js';
 import VectorTileSource from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/source/VectorTile.js';
 import WebGLVectorTileLayer from '../../vendor/openlayers-10.10.0-runtime/node_modules/ol/layer/WebGLVectorTile.js';
+import BoostWebGLVectorTileLayer from '../../src/BoostWebGLVectorTileLayer.js';
 
 const report={ready:false,errors:[],loaded:0};
 globalThis.__r76=report;
@@ -39,7 +40,10 @@ try {
  if(!response.ok)throw Error('Run npm run test:rtx:prepare');
  const manifest=await response.json();
  if(manifest.sources?.length!==32)throw Error('Expected independent MVT fixture manifest');
- const count=Math.min(50,Math.max(1,Number(new URLSearchParams(location.search).get('count')||8)));
+ const params=new URLSearchParams(location.search);
+ const count=Math.min(50,Math.max(1,Number(params.get('count')||8)));
+ const layerKind=params.get('layer')==='stock'?'stock':'boost';
+ const LayerClass=layerKind==='boost'?BoostWebGLVectorTileLayer:WebGLVectorTileLayer;
  const selected=Array.from({length:count},(_,i)=>manifest.sources[i%32]);
  const tiles=new globalThis.Map();
  for(const part of selected){
@@ -68,12 +72,12 @@ try {
    const style=part.layer==='transportation'
      ?{'stroke-color':'rgba(220,65,55,0.92)','stroke-width':3}
      :{'fill-color':'rgba(210,194,169,0.52)','stroke-color':'#766655','stroke-width':1};
-   return new WebGLVectorTileLayer({source,style,disableHitDetection:true});
+   return new LayerClass({source,style,disableHitDetection:true});
  });
  const map=new Map({target:document.getElementById('map'),layers,view,controls:[]});
  Object.assign(report,{map,layers,view,initialCenter:[...view.getCenter()],
    initialResolution:view.getResolution(),initialStatus:map.getBoostStatus(),
-   expectedLayers:count,ready:true});
+   expectedLayers:count,layerKind,ready:true});
  map.renderSync();publish();
 } catch(error){report.errors.push(String(error?.stack||error));publish();}
 </script>
