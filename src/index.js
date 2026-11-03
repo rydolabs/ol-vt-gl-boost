@@ -9,3 +9,4 @@ export {OlExclusiveVectorTileRenderHost} from './ol/OlExclusiveVectorTileRenderH
 
 // Opt-in one-import OpenLayers Map replacement (OL 10.10.0 only).
 export {BoostMap,createBoostMapClass} from './ol/BoostMap.js';
+export {BoostWebGLVectorTileLayer} from './BoostWebGLVectorTileLayer.js';
