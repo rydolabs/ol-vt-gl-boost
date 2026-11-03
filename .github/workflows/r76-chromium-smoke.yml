@@ -38,13 +38,13 @@ jobs:
           node tests/rtx/run_r76_dropin_map.mjs . artifacts/r76-dropin
           if($LASTEXITCODE -ne 0){throw 'Chromium R76 API integration smoke failed'}
           $r=Get-Content artifacts/r76-dropin/summary.json -Raw | ConvertFrom-Json
-          if(-not $r.pass -or @($r.scenes).Count -ne 2){throw 'Missing 8/50 layer browser evidence'}
-          Write-Host 'R76_CHROMIUM_8_AND_50_LAYER_API_PASS'
+          if(-not $r.pass -or @($r.scenes).Count -ne 4){throw 'Missing Boost+stock 8/50 layer browser evidence'}
+          Write-Host 'R76_CHROMIUM_BOOST_AND_STOCK_8_AND_50_LAYER_API_PASS'
       - name: Preserve browser evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: olvt-r76-chromium-8-and-50-layer
+          name: olvt-r76-chromium-boost-and-stock-8-and-50-layer
           path: artifacts/r76-dropin/**
           if-no-files-found: warn
           retention-days: 30
