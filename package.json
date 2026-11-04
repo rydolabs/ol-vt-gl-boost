@@ -23,7 +23,8 @@
     "test:r77:contract": "node tests/verify_r77_example_benchmark.mjs",
     "test:r77:browser": "node tests/browser/run_r77_webgl_vector_tiles.mjs . artifacts/r77-example",
     "test:r79": "node tests/verify_r79_gl_error_policy.mjs",
-    "test:r79:browser": "node tests/browser/run_r79_gl_error_modes.mjs . artifacts/r79-modes"
+    "test:r79:browser": "node tests/browser/run_r79_gl_error_modes.mjs . artifacts/r79-modes",
+    "test:r80:merge-gates": "node tests/browser/run_r80_merge_gates.mjs . artifacts/r80-merge-gates"
   },
   "engines": {
     "node": ">=22 <24"
