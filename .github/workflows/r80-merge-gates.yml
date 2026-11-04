@@ -1,0 +1,56 @@
+name: R80 pre-merge real browser cadence / visual / soak gates
+on:
+  push:
+    branches: [work/r79-nonblocking-gl-error-20261103]
+    paths:
+      - 'tests/browser/run_r80_merge_gates.mjs'
+      - 'package.json'
+      - '.github/workflows/r80-merge-gates.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-merge-gates:
+    runs-on: windows-latest
+    timeout-minutes: 28
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore pinned source, browser driver and 32 unique MVT tiles
+        run: |
+          $ErrorActionPreference='Stop'
+          npm ci --no-audit --no-fund
+          if($LASTEXITCODE -ne 0){throw 'npm ci failed'}
+          npm run test:r79
+          if($LASTEXITCODE -ne 0){throw 'R79 nonblocking GL policy regression'}
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.55.0
+          if($LASTEXITCODE -ne 0){throw 'Playwright installation failed'}
+          npm run test:rtx:prepare
+          if($LASTEXITCODE -ne 0){throw 'PBF fixture missing'}
+      - name: Execute ABBA 8/32 layers, pixel oracle, and continuous 60 second pan
+        env:
+          R80_ALLOW_SOFTWARE_GL: '1'
+          R80_CANDIDATE_SHA: ${{ github.sha }}
+          R80_CASE_MS: '7000'
+          R80_SOAK_MS: '60000'
+        run: |
+          $ErrorActionPreference='Stop'
+          npm run test:r80:merge-gates
+          if($LASTEXITCODE -ne 0){throw 'R80 merge visual/cadence/soak gate failed'}
+          $s=Get-Content artifacts/r80-merge-gates/summary.json -Raw | ConvertFrom-Json
+          if(-not $s.pass -or @($s.cases).Count -ne 8 -or @($s.comparisons).Count -ne 4 -or
+             -not $s.soak -or $s.gpuMode -ne 'software-webgl'){throw 'R80 missing merge-gate evidence'}
+          Write-Host 'R80_MERGE_VISUAL_PAN_60S_SOAK_PASS'
+      - name: Preserve screenshots, frame intervals, JS heap stats and errors
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r80-merge-cadence-visual-60s-soak-software-webgl
+          path: artifacts/r80-merge-gates/**
+          retention-days: 30
+          if-no-files-found: warn
