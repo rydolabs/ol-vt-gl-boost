@@ -55,6 +55,7 @@ import BoostWebGLVectorTileLayer from '../../src/BoostWebGLVectorTileLayer.js';
 const params=new URLSearchParams(location.search);
 const renderer=params.get('renderer')==='boost'?'boost':'stock';
 const count=[1,8,16,32].includes(Number(params.get('count')))?Number(params.get('count')):32;
+const glCheck=params.get('check')==='strict'?'strict':'nonblocking';
 document.getElementById('renderer').value=renderer;
 document.getElementById('count').value=String(count);
 function navigate(){
@@ -101,6 +102,8 @@ const display=()=>{
   firstCompleteFrameMs:state.firstCompleteFrameMs,
   postrenderCount:state.postrenderCount,
   boostStatus:st??null,
+  glErrorCheckMode:boost?.backend?.glErrorCheckMode??null,
+  glErrorChecked:boost?.snapshot?.().frameStats?.glErrorChecked??null,
   boostExclusive:boost?.exclusiveActive??false,
   boostTileCount:boost?.snapshot?.().tileCount??null,
   boostProgramCacheSize:boost?.backend?.programs?.size??null,
@@ -162,7 +165,8 @@ try{
  });
  const MapClass=renderer==='boost'?BoostMap:OLMap;
  // Both modes use the exact same no-target -> setTarget lifecycle.
- const map=new MapClass({target:null,layers,view,controls:[],interactions:[]});
+ const map=new MapClass({target:null,layers,view,controls:[],interactions:[],
+  ...(renderer==='boost'?{boostOptions:{backendOptions:{glErrorCheckMode:glCheck}}}:{})});
  state.map=map;state.layers=layers;state.view=view;
  map.on('postrender',()=>{
   state.postrenderCount++;
@@ -173,7 +177,8 @@ try{
    const b=map.boost;
    const boostReady=renderer!=='boost'||(b?.exclusiveActive===true&&
     b?.scene?.frames>0&&b?.snapshot?.().tileCount>=count&&
-    b?.snapshot?.().frameStats?.glError===0);
+    (b?.snapshot?.().frameStats?.glErrorChecked===false||
+     b?.snapshot?.().frameStats?.glError===0));
    if(state.firstCompleteFrameMs===null&&state.loadedCount>=count&&
      boostReady&&(!map.getBoostStatus||map.getBoostStatus().enabled)){
     state.firstCompleteFrameMs=performance.now()-state.initializationStart;

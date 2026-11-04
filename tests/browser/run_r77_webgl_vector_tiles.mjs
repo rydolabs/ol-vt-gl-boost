@@ -95,11 +95,16 @@ try{
        'Missing pan samples '+JSON.stringify(pan));
      const stable=await page.evaluate(()=>{
       const s=globalThis.__webglExampleBenchmark,map=s.map,b=map?.boost;
+      const frame=b?.snapshot?.().frameStats;
+      // Nonblocking mode deliberately returns glError:null (unchecked).
+      // Verify GL once, AFTER measured pans, rather than reporting null as 0.
+      const diagnosticError=b?.backend?.checkGlError?.()??null;
       return {loadedCount:s.loadedCount,errors:s.errors,boostActive:b?.exclusiveActive??false,
-        frameError:b?.snapshot?.().frameStats?.glError??0,
-        glCalls:{...s.glCalls}};
+        frameError:frame?.glError??null,frameErrorChecked:frame?.glErrorChecked??null,
+        diagnosticError,glCalls:{...s.glCalls}};
      });
-     check(stable.errors.length===0&&stable.frameError===0,
+     check(stable.errors.length===0&&((renderer==='stock')||stable.diagnosticError===0)&&
+       (stable.frameError===null||stable.frameError===0),
        'WebGL draw failed '+JSON.stringify(stable));
      const imageName='case-'+count+'-'+cycle+'-'+phase+'-'+renderer+'.png';
      const png=await page.locator('#map').screenshot({path:join(dir,imageName)});

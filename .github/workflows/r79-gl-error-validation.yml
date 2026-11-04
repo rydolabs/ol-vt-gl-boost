@@ -1,0 +1,88 @@
+name: R79 nonblocking GL error validation (SwiftShader)
+on:
+  push:
+    branches: [work/r79-nonblocking-gl-error-20261103]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  error-modes:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install source, browser driver, and identical 32 independent MVT PBFs
+        run: |
+          $ErrorActionPreference='Stop'
+          npm ci --no-audit --no-fund
+          if($LASTEXITCODE -ne 0){throw 'npm ci failed'}
+          npm run test:r79
+          if($LASTEXITCODE -ne 0){throw 'R79 GL contract failed'}
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.55.0
+          if($LASTEXITCODE -ne 0){throw 'Playwright install failed'}
+          npm run test:rtx:prepare
+          if($LASTEXITCODE -ne 0){throw 'PBF preparation failed'}
+      - name: Compare strict and nonblocking ABBA, forced error and context-loss recovery
+        env:
+          R79_ALLOW_SOFTWARE_GL: '1'
+          R79_CANDIDATE_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference='Stop'
+          node tests/browser/run_r79_gl_error_modes.mjs . artifacts/r79-modes
+          if($LASTEXITCODE -ne 0){throw 'R79 browser mode comparison failed'}
+          $s=Get-Content artifacts/r79-modes/summary.json -Raw | ConvertFrom-Json
+          if(-not $s.pass -or @($s.samples).Count -ne 8 -or @($s.fallbacks).Count -ne 2){throw 'Incomplete R79 proof'}
+          Write-Host 'R79_GL_ERROR_MODES_ABBA_FALLBACK_PASS'
+      - name: Preserve strict-vs-nonblocking JSON and PNG evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r79-strict-vs-nonblocking-webgl-error-safety
+          path: artifacts/r79-modes/**
+          retention-days: 30
+          if-no-files-found: warn
+  stock-vs-boost:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore original OL 10.10.0 and 32 PBF inputs
+        run: |
+          $ErrorActionPreference='Stop'
+          npm ci --no-audit --no-fund
+          if($LASTEXITCODE -ne 0){throw 'npm ci failed'}
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.55.0
+          if($LASTEXITCODE -ne 0){throw 'Playwright install failed'}
+          npm run test:rtx:prepare
+          if($LASTEXITCODE -ne 0){throw 'PBF preparation failed'}
+      - name: Recheck Stock OL versus nonblocking Boost 32-case ABBA benchmark
+        env:
+          R77_ALLOW_SOFTWARE_GL: '1'
+          R77_CANDIDATE_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference='Stop'
+          node tests/browser/run_r77_webgl_vector_tiles.mjs . artifacts/r79-stock-comparison
+          if($LASTEXITCODE -ne 0){throw 'R79 stock vs Boost ABBA failed'}
+          $s=Get-Content artifacts/r79-stock-comparison/summary.json -Raw | ConvertFrom-Json
+          if(-not $s.pass -or @($s.measurements).Count -ne 32){throw 'R79 stock comparison missing cases'}
+          Write-Host 'R79_OL_VS_BOOST_32_CASE_ABBA_PASS'
+      - name: Preserve raw stock-versus-Boost samples and 32 PNGs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r79-stock-vs-nonblocking-boost-abba
+          path: artifacts/r79-stock-comparison/**
+          retention-days: 30
+          if-no-files-found: warn
