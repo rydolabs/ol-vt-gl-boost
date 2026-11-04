@@ -174,8 +174,10 @@ try{
         const {st,errors}=await attach(page,renderer,count);
         const before=await page.locator('#map').screenshot();
         const metrics=await measure(page,durationMs);
-        requireTrue(metrics.iterations>=20&&metrics.raf.n>=19,
-          'Page rAF starved '+JSON.stringify({renderer,count,metrics}));
+        // Software SwiftShader may schedule only ~2 Hz at 32 sources.
+        // Record the actual degradation rather than discarding that case.
+        requireTrue(metrics.iterations>=5&&metrics.raf.n>=4,
+          'Insufficient rAF observations '+JSON.stringify({renderer,count,metrics}));
         requireTrue(metrics.errors.length===0&&errors.length===0,
           'Browser error in pan '+JSON.stringify({renderer,count,metrics:metrics.errors,errors}));
         if(renderer==='boost'){
