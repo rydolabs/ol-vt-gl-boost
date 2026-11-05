@@ -1,0 +1,53 @@
+name: R81 32-layer pan p95 jitter root-cause diagnostic
+on:
+  push:
+    branches: [diag/r81-raf-tail-jitter-20261105]
+    paths:
+      - 'tests/browser/run_r81_raf_tail_diagnostic.mjs'
+      - '.github/workflows/r81-raf-tail-diagnostic.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  raf-jitter:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore OL 10.10.0 and identical 32 independent local MVT tile sources
+        run: |
+          $ErrorActionPreference='Stop'
+          npm ci --no-audit --no-fund
+          if($LASTEXITCODE -ne 0){throw 'npm ci failed'}
+          npm run test:r79
+          if($LASTEXITCODE -ne 0){throw 'Policy unit failed'}
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.55.0
+          if($LASTEXITCODE -ne 0){throw 'Playwright install failed'}
+          npm run test:rtx:prepare
+          if($LASTEXITCODE -ne 0){throw 'Local PBF corpus failed'}
+      - name: Record raw rAF gaps, event-loop heartbeat and long tasks
+        env:
+          R81_ALLOW_SOFTWARE_GL: '1'
+          R81_CANDIDATE_SHA: ${{ github.sha }}
+          R81_CASE_MS: '30000'
+        run: |
+          $ErrorActionPreference='Stop'
+          node tests/browser/run_r81_raf_tail_diagnostic.mjs . artifacts/r81-raf-tail
+          if($LASTEXITCODE -ne 0){throw 'R81 profiling failed'}
+          $s=Get-Content artifacts/r81-raf-tail/summary.json -Raw | ConvertFrom-Json
+          if(-not $s.pass -or @($s.cases).Count -ne 4){throw 'Raw p95 diagnostic incomplete'}
+          Write-Host 'R81_P95_RAW_FRAME_DIAGNOSTIC_PASS'
+      - name: Archive raw frame CSV and JSON with spike timestamps
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r81-raf-tail-raw-event-loop-long-task-32-layer
+          path: artifacts/r81-raf-tail/**
+          retention-days: 30
+          if-no-files-found: warn
