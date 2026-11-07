@@ -1,0 +1,138 @@
+{
+  "schema": "ol-vt-gl-boost-handoff-evidence-v1",
+  "checkpoint_utc_date": "2026-11-07",
+  "status": "draft-unmerged-no-production-approval",
+  "repository": "rydolabs/ol-vt-gl-boost",
+  "main_sha_at_checkpoint": "f097ab73a4cd4e5501965de9a561b032c728a89c",
+  "stacked_prs": [
+    {
+      "pr": 12,
+      "head_sha": "c177ab4f6234553403d13ddd94ff504a54eb052b",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "pr": 13,
+      "head_sha": "a5ab759de1a14f465052d381862d16eb99cc3366",
+      "draft": true,
+      "merged": false
+    },
+    {
+      "pr": 14,
+      "head_sha": "c546941f274d9dca6635bfccd681247847955632",
+      "draft": true,
+      "merged": false
+    }
+  ],
+  "physical_gpu": {
+    "model": "NVIDIA GeForce RTX 5060 Ti",
+    "driver": "610.47",
+    "renderer_ol_version": "10.10.0",
+    "runner_labels": [
+      "self-hosted",
+      "Windows",
+      "X64",
+      "m5-gpu"
+    ],
+    "artifact_downloaded_sha256_note": "sha256 checksums of downloaded GitHub Actions ZIP bytes, verified with CRC; reexports may be byte different",
+    "artifacts": [
+      {
+        "workflow_run": 41571283302,
+        "attempt": 3,
+        "source_sha": "1eb41388f96e85d75f437ac28cb01a41df6e00c1",
+        "status": "success",
+        "artifact_id": 13409451822,
+        "url": "https://github.com/nssang00/chatgpt-write-test/actions/runs/41571283302/artifacts/13409451822",
+        "bytes": 1847956,
+        "zip_sha256": "442e3fd3a300888cbaad4dc0ae9eb703c453819cc7ab3e6303363e556dabde6a",
+        "zip_crc_check": "pass"
+      },
+      {
+        "workflow_run": 41987056460,
+        "attempt": 1,
+        "source_sha": "5441ca870b94f89a89a1ac77ca8d30a252295571",
+        "status": "success",
+        "artifact_id": 13409940506,
+        "url": "https://github.com/nssang00/chatgpt-write-test/actions/runs/41987056460/artifacts/13409940506",
+        "bytes": 1533468,
+        "zip_sha256": "3166dd76950a0f930cafb7732ace222294848caa83b1214e0479f0c8d5080047",
+        "zip_crc_check": "pass"
+      }
+    ],
+    "results": {
+      "r79_stock_vs_boost": {
+        "sample_cases": 32,
+        "source_count": 32,
+        "stock_first_complete_ms_median": 252.6,
+        "boost_first_complete_ms_median": 72.1,
+        "first_complete_reduction_pct": 71.46,
+        "stock_render_sync_ms_median": 3.65,
+        "boost_render_sync_ms_median": 1.6,
+        "submission_reduction_pct": 56.16,
+        "stock_programs_median": 96,
+        "boost_programs_median": 2
+      },
+      "r79_strict_vs_nonblocking": {
+        "sources_32": {
+          "strict_cpu_submission_ms_median": 2.4,
+          "nonblocking_cpu_submission_ms_median": 1.45,
+          "submission_reduction_pct": 39.58
+        },
+        "fallbacks": [
+          "strict_injected_gl_error_to_stock_ol",
+          "nonblocking_webgl_context_loss_to_stock_ol"
+        ],
+        "pass": true
+      },
+      "r81_32_source_raf": {
+        "per_mode_intervals": 1916,
+        "per_page_duration_sec": 30,
+        "pages": 4,
+        "stock_p50_ms": 31.1,
+        "boost_p50_ms": 31.1,
+        "stock_p95_ms": 32.1,
+        "boost_p95_ms": 32,
+        "stock_p99_ms": 32.1,
+        "boost_p99_ms": 32.1,
+        "stock_mean_render_sync_ms": 2.86,
+        "boost_mean_render_sync_ms": 1,
+        "estimated_callbacks_per_second_both": 31.94
+      },
+      "r81_60_sec_soak": {
+        "sources": 32,
+        "duration_ms": 60017.2,
+        "iterations": 1919,
+        "raf_p95_ms": 32,
+        "js_heap_delta_bytes": 4845781,
+        "post_diagnostic_gl_error": 0,
+        "pass": true
+      },
+      "r81_stock_boost_visual": {
+        "layers_8_pixel_difference_percent": 0.93,
+        "layers_32_pixel_difference_percent": 4.06,
+        "layers_32_mean_abs_rgb_channel_difference_over_255": 0.13,
+        "pixel_exact": false,
+        "threshold_pass": true
+      },
+      "r81_vram": {
+        "scope": "whole_gpu_not_process",
+        "samples": 50,
+        "first_used_mib": 453,
+        "last_used_mib": 400,
+        "min_used_mib": 399,
+        "max_used_mib": 671,
+        "long_term_leak_not_proven": true
+      }
+    },
+    "limits": [
+      "GPU presentation FPS not measured; requestAnimationFrame is a callback scheduler proxy",
+      "Only ~60s continuous soak on one host, not long-run VRAM leak proof",
+      "Nonblocking mode cannot auto-detect all non-context-loss WebGL errors",
+      "Stock-vs-Boost screenshot parity is not pixel exact",
+      "Controlled literal style workload is not full official OpenLayers example",
+      "Artifacts originally retained 30 days by workflows",
+      "No source redistributable license at main root",
+      "No merge or production approval"
+    ]
+  }
+}
