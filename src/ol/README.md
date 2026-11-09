@@ -54,3 +54,9 @@ The adapter now also exposes neutral layer state (`visible`, `opacity`, `zIndex`
 - Nested group `visible` and `opacity` are inherited; a group's defined `zIndex` becomes the default only for descendants whose own zIndex is undefined, matching OL 10.10.0 group state behavior.
 - Collection `add/remove` changes recompute leaf sequence, so equal-zIndex layers follow the current OL collection order.
 - Style zIndex is carried separately as `sceneStyleZIndex`; it never gets folded into the layer zIndex. Layer order therefore dominates feature/style zIndex, while style zIndex orders render buckets inside one layer.
+
+### R83 release-safety policy (experimental branch)
+
+The one-import `BoostMap` now **defaults to strict per-frame WebGL error checks**. This detects non-context-loss GL errors and restores the original OL renderer through the existing fail-closed exception path. `boostOptions.backendOptions.glErrorCheckMode='nonblocking'` remains an *explicit, unsafe/experimental* performance option: arbitrary GL errors other than context loss may stay undetected and are not approved for production. Benchmark `check=nonblocking` measurements are **not** the strict-default deployment performance baseline.
+
+The active BoostMap watches the nested OL layer tree (synchronous Collection add/remove and root replacement, with postrender verification) and validates the scene on every leaf-layer change. Mixed/unsupported additions, changed eligible layer membership, style variables and unsupported styles disable Boost and re-enable Stock OL. Changing the layer tree while active requires an explicit `enableBoost()` after it becomes eligible again; no automatic re-enable is attempted. This uses OL 10.10.0 private compatibility surfaces and requires browser regression validation.
