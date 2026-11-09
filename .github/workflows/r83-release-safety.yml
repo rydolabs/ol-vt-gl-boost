@@ -1,0 +1,72 @@
+name: R83 pre-release GL fallback and live layer-tree safety gates
+on:
+  push:
+    branches: [work/r83-release-safety-gates-20261109]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  release-safety-unit:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore pinned OpenLayers 10.10.0
+        run: npm ci --no-audit --no-fund
+      - name: Existing CPU/OL/GL regression suite
+        run: |
+          npm test
+          npm run test:contract
+          npm run test:r73
+          npm run test:r75
+          npm run test:r76
+          npm run test:r77:contract
+          npm run test:r79
+          npm run test:vendor
+      - name: New release-safety deterministic regression
+        run: npm run test:r83
+  release-safety-browser:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore browser driver and 32 independent local MVT fixtures
+        run: |
+          $ErrorActionPreference='Stop'
+          npm ci --no-audit --no-fund
+          if($LASTEXITCODE -ne 0){throw 'npm ci failed'}
+          npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.55.0
+          if($LASTEXITCODE -ne 0){throw 'Playwright install failed'}
+          npm run test:rtx:prepare
+          if($LASTEXITCODE -ne 0){throw 'MVT fixture preparation failed'}
+      - name: Prove strict non-context GL error and live layer fallback with real OL
+        env:
+          R83_ALLOW_SOFTWARE_GL: '1'
+          R83_CANDIDATE_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference='Stop'
+          node tests/browser/run_r83_release_safety.mjs . artifacts/r83-release-safety
+          if($LASTEXITCODE -ne 0){throw 'R83 release-safety browser gates failed'}
+          $s=Get-Content artifacts/r83-release-safety/summary.json -Raw | ConvertFrom-Json
+          if(-not $s.pass -or @($s.cases).Count -ne 5){throw 'Missing R83 browser safety evidence'}
+      - name: Preserve screenshots, error/fallback states and SHA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r83-real-ol-strict-gl-dynamic-layer-fallback
+          path: artifacts/r83-release-safety/**
+          retention-days: 30
+          if-no-files-found: warn

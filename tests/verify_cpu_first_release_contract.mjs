@@ -34,8 +34,15 @@ for(const [path,hash] of Object.entries(r79Changed))
 // current sources. Do not overwrite the R73 evidence with new source hashes.
 for(const pin of [r73.changedFacade,r73.newHost,r73.changedScene])
  assert.equal(blobSha(r73Fixture(pin.path)),pin.gitBlobSha1,pin.path+' R73 snapshot');
+// R83 fixes the live-scene event callback. Preserve pre-R83 source bytes
+// separately and verify the exact R75 ancestor rather than altering the
+// historical manifest or accidentally blessing the changed source.
+const r83SceneSnapshot='tests/fixtures/r83-prechange/src__ol__scene.js.snapshot';
+assert.equal(blobSha(r83SceneSnapshot),'d5ada2fa8d6244c79e7477c4d8af8e48d38ca1ef',
+  'R83 must preserve original scene content in its new immutable fixture');
 for(const pin of r75.changedBlobs)
- assert.equal(blobSha(pin.path==='src/OLVectorTileBoost.js'?r79Fixture(pin.path):pin.path),
+ assert.equal(blobSha(pin.path==='src/OLVectorTileBoost.js'?r79Fixture(pin.path):
+   pin.path==='src/ol/scene.js'?r83SceneSnapshot:pin.path),
    pin.gitBlobSha1,pin.path+' R75 ancestor preserved');
 assert.equal(legacy.workerDefault,'off');
 assert.equal(r67.workerDefault,'off');assert.equal(r68.workerDefault,'off');

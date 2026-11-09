@@ -90,15 +90,15 @@ const Map=createBoostMapClass({
 });
 const one=new Map({target:'map',layers:[new FakeLayer()]});
 assert.equal(one.getBoostStatus().enabled,true);
-assert.equal(constructed.at(-1).backendOptions.glErrorCheckMode,'nonblocking');
+assert.equal(constructed.at(-1).backendOptions.glErrorCheckMode,'strict');
 one.disableBoost();
 
 const debug=new Map({
  target:'map',layers:[new FakeLayer()],
- boostOptions:{backendOptions:{glErrorCheckMode:'strict',profileTiming:true}}
+ boostOptions:{backendOptions:{glErrorCheckMode:'nonblocking',profileTiming:true}}
 });
 assert.equal(debug.getBoostStatus().enabled,true);
-assert.equal(constructed.at(-1).backendOptions.glErrorCheckMode,'strict');
+assert.equal(constructed.at(-1).backendOptions.glErrorCheckMode,'nonblocking');
 assert.equal(constructed.at(-1).backendOptions.profileTiming,true);
 debug.disableBoost();
 console.log('R79_NONBLOCKING_GL_STRICT_DEFAULT_200_FRAMES_AND_BOOSTMAP_OVERRIDE_PASS');

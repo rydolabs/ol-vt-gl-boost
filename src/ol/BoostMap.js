@@ -92,17 +92,61 @@ export function createBoostMapClass({MapBase,LayerBase,createBoost,createCanvas}
     }
     getBoostStatus(){return {...this._boostMapState};}
     get boost(){return this._boostMapInstance;}
+    _validateLiveBoostScene(layers){
+      if(!this._boostMapInstance)return false;
+      try{
+        const result=checkScene(this,LayerBase);
+        if(result.reason){this._disableBoost(result.reason);return false;}
+        // The source/layer tree adapter may accept a new layer that the
+        // exclusive OL interception host does not own. Never leave a new
+        // native OL renderer active under the Boost overlay.
+        if(result.layers.length!==layers.length||
+          result.layers.some((layer,i)=>layer!==layers[i])){
+          this._disableBoost('OL layer tree changed while Boost was active');
+          return false;
+        }
+        return true;
+      }catch(error){
+        this._disableBoost('OL scene eligibility check failed: '+String(error?.message||error));
+        return false;
+      }
+    }
     _watchBoostLayers(layers){
       this._unwatchBoostLayers();
+      const verify=()=>this._validateLiveBoostScene(layers);
+      // Collections emit add/remove synchronously before the next OL render.
+      // Watch nested LayerGroup collections as well as the root. A later
+      // postrender check covers replacement of group collections and changes
+      // that OpenLayers exposes without an individual layer change event.
+      const watched=new Set();
+      const watchGroup=group=>{
+        const collection=group?.getLayers?.();
+        if(!collection||watched.has(collection))return;
+        watched.add(collection);
+        for(const event of ['add','remove']){
+          collection.on?.(event,verify);
+          this._boostMapLayerDisposers.push(()=>collection.un?.(event,verify));
+        }
+        for(const child of collection.getArray?.()||[]){
+          if(child?.getLayers)watchGroup(child);
+        }
+      };
+      watchGroup(this.getLayerGroup?.());
+      this.on?.('change:layergroup',verify);
+      this.on?.('postrender',verify);
+      this._boostMapLayerDisposers.push(()=>{
+        this.un?.('change:layergroup',verify);
+        this.un?.('postrender',verify);
+      });
       for(const layer of layers){
         let previousStyle=layer.style_,previousSource=layer.getSource();
         const changed=()=>{
-          if(!this._boostMapInstance)return;
+          // Validate on *every* layer change, not just object-identity style
+          // changes: OL style variables can change with the same style ref.
+          if(!verify())return;
           const style=layer.style_,source=layer.getSource();
           if(style===previousStyle&&source===previousSource)return;
           previousStyle=style;previousSource=source;
-          const result=checkScene(this,LayerBase);
-          if(result.reason){this._disableBoost(result.reason);return;}
           try{this._boostMapInstance.sync();}
           catch(error){this._disableBoost('Layer update failed: '+String(error?.message||error));}
         };
@@ -177,9 +221,11 @@ export function createBoostMapClass({MapBase,LayerBase,createBoost,createCanvas}
         boost=createBoost({
           map:this,canvas,canvasMode:'managed-overlay',
           stockOlRenderMode:'exclusive',
-          // Only the opt-in BoostMap defaults to nonblocking. Direct backend
-          // users retain strict per-frame error checks; callers can override.
-          backendOptions:{glErrorCheckMode:'nonblocking',...(this._boostMapOptions.backendOptions||{})},
+          // Release-safe default checks each frame for *all* WebGL errors,
+          // including errors that do not cause context loss. The optional
+          // nonblocking policy is explicitly unsafe for automatic fail-close;
+          // use only for benchmarks/controlled experiments.
+          backendOptions:{glErrorCheckMode:'strict',...(this._boostMapOptions.backendOptions||{})},
           layerStyleResolver:layer=>layer.style_,
           vectorTileOptions:{
             drawMode:'style-pass',stableStyleIdentityCache:true,
