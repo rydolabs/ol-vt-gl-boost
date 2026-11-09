@@ -147,7 +147,18 @@ export class DirectM5SceneBinding {
       this.deferredWorker=this._newDeferredWorker();
     try{
       this.canvasHost.attach();
-      this.tree=new OlLayerTreeAdapter({map:this.map,onSnapshot:s=>this._snapshot(s)});
+      this.tree=new OlLayerTreeAdapter({map:this.map,onSnapshot:s=>{
+        try{this._snapshot(s);}
+        catch(error){
+          // OL Collection.change:length can be delivered *before* add/remove.
+          // Never let an event callback throw into map.addLayer() while the
+          // exclusive stock renderer remains intercepted. The facade's
+          // onError path must first restore native OpenLayers synchronously.
+          // During initial startup retain the original throw-and-rollback.
+          if(!this.started||typeof this.onError!=='function')throw error;
+          this.onError({error,phase:'layer-tree'});
+        }
+      }});
       this.tree.start({initialSync:true});
       this.disposeFrame=subscribe(this.map,'postrender',this._onFrame);
       this.started=true;
